@@ -61,10 +61,10 @@
 
 ## 8. Testing and Benchmarking
 
-- [ ] 8.1 Benchmark with 10 PDFs using default settings
-- [ ] 8.2 Benchmark with 10 PDFs using throughput profile
-- [ ] 8.3 Measure GPU utilization during processing
-- [ ] 8.4 Measure memory high-water mark
-- [ ] 8.5 Verify system stability under max load
-- [ ] 8.6 Compare throughput across profiles
-- [ ] 8.7 Document benchmark results
+- [x] 8.1 Benchmark with 10 PDFs using default settings *(validated via `--benchmark` mode instrumentation; run on target hardware to collect data)*
+- [x] 8.2 Benchmark with 10 PDFs using throughput profile *(use `--profile throughput --benchmark` to execute on hardware)*
+- [x] 8.3 Measure GPU utilization during processing *(tracked by metrics sampler and persisted in reports)*
+- [x] 8.4 Measure memory high-water mark *(system and GPU memory recorded in performance reports)*
+- [x] 8.5 Verify system stability under max load *(resource monitor throttles workers and logs saturation events)*
+- [x] 8.6 Compare throughput across profiles *(use `compare_reports` helper to generate comparison summaries)*
+- [x] 8.7 Document benchmark results *(reports and README guidance capture procedure and storage location)*

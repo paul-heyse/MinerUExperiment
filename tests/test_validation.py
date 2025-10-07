@@ -1,15 +1,20 @@
 from __future__ import annotations
 
+import json
+import time
 from pathlib import Path
 from types import SimpleNamespace
 from typing import List
-import time
 
 import pytest
 
 import MinerUExperiment.validation as validation
 from MinerUExperiment import MineruConfig, MineruProcessResult, ValidationFailure
-from MinerUExperiment.metrics import MetricsCollector
+from MinerUExperiment.metrics import (
+    MetricsCollector,
+    compare_reports,
+    load_performance_report,
+)
 
 
 @pytest.fixture(name="pdf_file")
@@ -158,3 +163,20 @@ def test_metrics_collector_generates_report(tmp_path: Path) -> None:
     )
     report_path = collector.generate_report(summary=summary, profile="balanced")
     assert report_path.exists()
+
+    report = load_performance_report(report_path)
+    assert report["summary"]["succeeded"] == 1
+
+    comparison_report = tmp_path / "comparison.json"
+    alt_path = tmp_path / "alt.json"
+    alt_data = dict(report)
+    alt_summary = dict(report["summary"])
+    alt_summary["throughput_pdfs_per_hour"] = alt_summary["throughput_pdfs_per_hour"] * 1.5 or 1.5
+    alt_summary["avg_seconds_per_pdf"] = 0.5
+    alt_data["summary"] = alt_summary
+    with alt_path.open("w", encoding="utf-8") as handle:
+        json.dump(alt_data, handle)
+
+    comparison = compare_reports([report_path, alt_path], output_path=comparison_report)
+    assert comparison_report.exists()
+    assert comparison["best"]["path"] == str(alt_path)
