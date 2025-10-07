@@ -11,6 +11,7 @@ from typing import Dict, List, Optional, Sequence
 
 from .gpu_utils import GPUUnavailableError, enforce_gpu_environment, warmup_gpu
 from .mineru_config import MineruConfig, load_config, write_config
+from .progress import ProgressBar
 
 LOGGER = logging.getLogger(__name__)
 
@@ -119,6 +120,7 @@ def process_pdf(
     expected_files: Sequence[str] = EXPECTED_OUTPUT_FILES,
     additional_args: Optional[Sequence[str]] = None,
     extra_env: Optional[Dict[str, str]] = None,
+    show_progress: bool = True,
 ) -> MineruProcessResult:
     """
     Invoke the MinerU CLI against a single PDF using the vLLM backend.
@@ -141,80 +143,113 @@ def process_pdf(
         Additional environment variables for the subprocess.
     """
 
-    pdf = _normalize_pdf_path(pdf_path)
-    output_directory = _resolve_output_dir(pdf, output_dir)
-    active_config = config or load_config()
+    total_steps = 5 + (1 if warmup else 0)
+    with ProgressBar(
+        total=total_steps,
+        desc="MinerU process",
+        unit="step",
+        enabled=show_progress,
+        leave=True,
+    ) as progress:
+        progress.set_postfix({"stage": "prepare io"})
+        pdf = _normalize_pdf_path(pdf_path)
+        output_directory = _resolve_output_dir(pdf, output_dir)
+        progress.update()
 
-    devices = _parse_visible_devices(active_config.cuda_visible_devices)
-    try:
-        enforce_gpu_environment(devices=devices, require_specific_gpu="RTX 5090")
-    except GPUUnavailableError as exc:
-        raise MineruInvocationError(f"GPU availability check failed: {exc}") from exc
+        progress.set_postfix({"stage": "load config"})
+        active_config = config or load_config()
+        progress.update()
 
-    if warmup:
+        devices = _parse_visible_devices(active_config.cuda_visible_devices)
+        device_str = ",".join(str(index) for index in devices)
+        progress.set_postfix(
+            {
+                "stage": "verify cuda",
+                "devices": device_str or "0",
+                "backend": active_config.backend_name,
+            }
+        )
         try:
-            warmup_gpu(devices[0])
+            enforce_gpu_environment(devices=devices, require_specific_gpu="RTX 5090")
         except GPUUnavailableError as exc:
-            LOGGER.warning("Skipping GPU warmup: %s", exc)
+            progress.set_postfix({"stage": "cuda error", "detail": str(exc)})
+            raise MineruInvocationError(f"GPU availability check failed: {exc}") from exc
+        progress.update()
 
-    mineru_cli = _detect_cli()
-    command = _build_command(
-        mineru_cli,
-        pdf_path=pdf,
-        output_dir=output_directory,
-        backend=active_config.backend_name,
-        additional_args=list(additional_args) if additional_args else None,
-    )
+        if warmup:
+            progress.set_postfix({"stage": "gpu warmup", "device": device_str or "0"})
+            try:
+                warmup_gpu(devices[0], show_progress=show_progress)
+            except GPUUnavailableError as exc:
+                progress.set_postfix({"stage": "warmup skipped", "detail": str(exc)})
+                LOGGER.warning("Skipping GPU warmup: %s", exc)
+            progress.update()
 
-    env = os.environ.copy()
-    env["CUDA_VISIBLE_DEVICES"] = ",".join(str(index) for index in devices)
-    env.setdefault("MINERU_BACKEND", active_config.backend_name)
-    if active_config.model_path:
-        env.setdefault("MINERU_MODEL_PATH", str(active_config.model_path))
-    env.setdefault("MINERU_MODEL_SOURCE", active_config.model_source)
-    if extra_env:
-        env.update(extra_env)
+        mineru_cli = _detect_cli()
+        command = _build_command(
+            mineru_cli,
+            pdf_path=pdf,
+            output_dir=output_directory,
+            backend=active_config.backend_name,
+            additional_args=list(additional_args) if additional_args else None,
+        )
 
-    LOGGER.info("Running MinerU: %s", " ".join(command))
-    process = subprocess.run(
-        command,
-        check=False,
-        capture_output=True,
-        text=True,
-        env=env,
-    )
+        env = os.environ.copy()
+        env["CUDA_VISIBLE_DEVICES"] = device_str
+        env.setdefault("MINERU_BACKEND", active_config.backend_name)
+        if active_config.model_path:
+            env.setdefault("MINERU_MODEL_PATH", str(active_config.model_path))
+        env.setdefault("MINERU_MODEL_SOURCE", active_config.model_source)
+        if extra_env:
+            env.update(extra_env)
 
-    stdout = process.stdout or ""
-    stderr = process.stderr or ""
-    success = process.returncode == 0
+        progress.set_postfix({"stage": "run mineru", "cli": mineru_cli})
+        LOGGER.info("Running MinerU: %s", " ".join(command))
+        process = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+        progress.update()
 
-    if success:
-        output_files = _collect_expected_outputs(output_directory, expected_files)
-        if len(output_files) < len(expected_files):
-            missing = set(expected_files) - set(output_files)
-            error_message = (
-                "MinerU finished without errors but missing expected outputs: "
-                + ", ".join(sorted(missing))
-            )
-            LOGGER.error(error_message)
+        stdout = process.stdout or ""
+        stderr = process.stderr or ""
+        success = process.returncode == 0
+
+        if success:
+            progress.set_postfix({"stage": "collect outputs"})
+            output_files = _collect_expected_outputs(output_directory, expected_files)
+            progress.update()
+            if len(output_files) < len(expected_files):
+                missing = set(expected_files) - set(output_files)
+                error_message = (
+                    "MinerU finished without errors but missing expected outputs: "
+                    + ", ".join(sorted(missing))
+                )
+                LOGGER.error(error_message)
+                return MineruProcessResult(
+                    success=False,
+                    output_dir=output_directory,
+                    output_files=output_files,
+                    stdout=stdout,
+                    stderr=stderr,
+                    error=error_message,
+                )
+            if config is None:
+                write_config(active_config)
             return MineruProcessResult(
-                success=False,
+                success=True,
                 output_dir=output_directory,
                 output_files=output_files,
                 stdout=stdout,
                 stderr=stderr,
-                error=error_message,
+                error=None,
             )
-        if config is None:
-            write_config(active_config)
-        return MineruProcessResult(
-            success=True,
-            output_dir=output_directory,
-            output_files=output_files,
-            stdout=stdout,
-            stderr=stderr,
-            error=None,
-        )
+
+        progress.set_postfix({"stage": "mineru error", "code": process.returncode})
+        progress.update()
 
     error_detail = stderr.strip() or stdout.strip() or "unknown error"
     LOGGER.error("MinerU failed (%d): %s", process.returncode, error_detail)

@@ -70,7 +70,7 @@ def test_validate_pdf_processing_success(
         raising=False,
     )
     monkeypatch.setattr(validation, "_collect_gpu_snapshot", lambda: "snapshot", raising=False)
-    monkeypatch.setattr(validation, "warmup_gpu", lambda device: 1.5, raising=False)
+    monkeypatch.setattr(validation, "warmup_gpu", lambda *_, **__: 1.5, raising=False)
 
     def fake_process_pdf(*args, **kwargs):
         call_sequence.append(kwargs.get("output_dir").name)
@@ -81,7 +81,11 @@ def test_validate_pdf_processing_success(
     times = iter([0.0, 3.0, 10.0, 12.0])
     monkeypatch.setattr(validation.time, "perf_counter", lambda: next(times), raising=False)
 
-    report = validation.validate_pdf_processing(pdf_file, output_root=tmp_path)
+    report = validation.validate_pdf_processing(
+        pdf_file,
+        output_root=tmp_path,
+        show_progress=False,
+    )
 
     assert report.baseline.duration_seconds == 3.0
     assert report.warmed.duration_seconds == 2.0
@@ -126,7 +130,7 @@ def test_validate_pdf_processing_failure_raises(
         raising=False,
     )
     monkeypatch.setattr(validation, "_collect_gpu_snapshot", lambda: None, raising=False)
-    monkeypatch.setattr(validation, "warmup_gpu", lambda device: 1.0, raising=False)
+    monkeypatch.setattr(validation, "warmup_gpu", lambda *_, **__: 1.0, raising=False)
 
     def failing_process_pdf(*args, **kwargs):
         return MineruProcessResult(
@@ -142,7 +146,11 @@ def test_validate_pdf_processing_failure_raises(
     monkeypatch.setattr(validation.time, "perf_counter", lambda: 0.0, raising=False)
 
     with pytest.raises(ValidationFailure):
-        validation.validate_pdf_processing(pdf_file, output_root=tmp_path)
+        validation.validate_pdf_processing(
+            pdf_file,
+            output_root=tmp_path,
+            show_progress=False,
+        )
 
 
 def test_metrics_collector_generates_report(tmp_path: Path) -> None:
