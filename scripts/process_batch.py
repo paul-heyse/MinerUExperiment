@@ -44,6 +44,23 @@ def _non_negative_float(value: str) -> float:
     return parsed
 
 
+def _positive_float(value: str) -> float:
+    parsed = _non_negative_float(value)
+    if parsed <= 0:
+        raise argparse.ArgumentTypeError("Value must be > 0")
+    return parsed
+
+
+def _percent(value: str) -> float:
+    try:
+        parsed = float(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("Expected percentage") from exc
+    if not (0 < parsed <= 100):
+        raise argparse.ArgumentTypeError("Percentage must be between 0 and 100")
+    return parsed
+
+
 def _env_kv(value: str) -> Dict[str, str]:
     if "=" not in value:
         raise argparse.ArgumentTypeError("Environment overrides must be KEY=VALUE")
@@ -56,9 +73,16 @@ def _env_kv(value: str) -> Dict[str, str]:
 def _profile_help() -> str:
     lines = ["Performance profiles:"]
     for profile in list_profiles():
+        temp_info = (
+            f", temp≤{profile.gpu_pause_temperature_c:.0f}°C"
+            if profile.gpu_pause_temperature_c is not None
+            else ""
+        )
         lines.append(
             f"  {profile.name:<10} - {profile.description} (workers={profile.workers.worker_count}, "
-            f"gpu_mem={profile.vllm.gpu_memory_utilization:.2f})"
+            f"gpu_mem={profile.vllm.gpu_memory_utilization:.2f}, "
+            f"throttle util={profile.gpu_pause_utilization * 100:.0f}%, "
+            f"mem={profile.gpu_pause_memory * 100:.0f}%{temp_info})"
         )
     return "\n".join(lines)
 
@@ -153,6 +177,48 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
         help="Performance tuning profile to apply",
     )
     parser.add_argument(
+        "--gpu-memory-throttle",
+        type=_percent,
+        default=None,
+        help="GPU memory percent to pause dispatch (profile default)",
+    )
+    parser.add_argument(
+        "--gpu-memory-resume",
+        type=_percent,
+        default=None,
+        help="GPU memory percent to resume dispatch (profile default)",
+    )
+    parser.add_argument(
+        "--gpu-util-throttle",
+        type=_percent,
+        default=None,
+        help="GPU utilization percent to pause dispatch (profile default)",
+    )
+    parser.add_argument(
+        "--gpu-util-resume",
+        type=_percent,
+        default=None,
+        help="GPU utilization percent to resume dispatch (profile default)",
+    )
+    parser.add_argument(
+        "--gpu-temp-throttle",
+        type=_positive_float,
+        default=None,
+        help="GPU temperature (°C) to pause dispatch (profile default)",
+    )
+    parser.add_argument(
+        "--gpu-temp-resume",
+        type=_positive_float,
+        default=None,
+        help="GPU temperature (°C) to resume dispatch (profile default)",
+    )
+    parser.add_argument(
+        "--gpu-monitor-interval",
+        type=_positive_float,
+        default=None,
+        help="Seconds between GPU telemetry samples (profile default)",
+    )
+    parser.add_argument(
         "--benchmark",
         action="store_true",
         help="Enable benchmark mode with enhanced metrics output",
@@ -225,6 +291,21 @@ def build_config(args: argparse.Namespace) -> BatchProcessorConfig:
         profile=profile,
         workers_override=args.workers,
     )
+
+    if args.gpu_memory_throttle is not None:
+        config_values["gpu_pause_memory_threshold"] = args.gpu_memory_throttle / 100.0
+    if args.gpu_memory_resume is not None:
+        config_values["gpu_resume_memory_threshold"] = args.gpu_memory_resume / 100.0
+    if args.gpu_util_throttle is not None:
+        config_values["gpu_pause_utilization_threshold"] = args.gpu_util_throttle / 100.0
+    if args.gpu_util_resume is not None:
+        config_values["gpu_resume_utilization_threshold"] = args.gpu_util_resume / 100.0
+    if args.gpu_temp_throttle is not None:
+        config_values["gpu_pause_temperature_c"] = args.gpu_temp_throttle
+    if args.gpu_temp_resume is not None:
+        config_values["gpu_resume_temperature_c"] = args.gpu_temp_resume
+    if args.gpu_monitor_interval is not None:
+        config_values["gpu_monitor_interval"] = max(args.gpu_monitor_interval, 0.1)
 
     config_values["mineru_extra_args"] = tuple(config_values["mineru_extra_args"])
     config_values["env_overrides"] = dict(config_values["env_overrides"])

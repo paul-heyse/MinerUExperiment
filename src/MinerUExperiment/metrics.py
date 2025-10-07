@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import logging
 import os
-import subprocess
 import threading
 import time
 from dataclasses import dataclass
@@ -11,6 +10,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Sequence
 
 import psutil
+
+from .gpu_utils import sample_gpu_telemetry
 
 LOGGER = logging.getLogger(__name__)
 
@@ -39,6 +40,8 @@ class GPUSample:
     timestamp: float
     utilization_percent: float
     memory_used_mb: float
+    memory_total_mb: float
+    memory_percent: float
     temperature_c: Optional[float]
 
 
@@ -156,52 +159,27 @@ class MetricsCollector:
             self._cpu_samples.append(sample)
 
     def _collect_gpu_sample(self) -> None:
-        nvidia_smi = shutil_which("nvidia-smi")
-        if nvidia_smi is None:
-            return
-
-        query = [
-            nvidia_smi,
-            "--query-gpu=utilization.gpu,memory.used,temperature.gpu",
-            "--format=csv,noheader,nounits",
-            f"--id={self.gpu_index}",
-        ]
-        try:
-            result = subprocess.run(
-                query,
-                capture_output=True,
-                text=True,
-                check=True,
-            )
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            return
-
-        line = result.stdout.strip().splitlines()
-        if not line:
-            return
-        fields = [item.strip() for item in line[0].split(",")]
-        try:
-            util = float(fields[0])
-            mem = float(fields[1])
-            temp = float(fields[2]) if len(fields) > 2 else None
-        except (ValueError, IndexError):
+        telemetry = sample_gpu_telemetry(self.gpu_index)
+        if telemetry is None:
             return
 
         sample = GPUSample(
             timestamp=time.time(),
-            utilization_percent=util,
-            memory_used_mb=mem,
-            temperature_c=temp,
+            utilization_percent=float(telemetry.utilization_percent),
+            memory_used_mb=float(telemetry.memory_used_mb),
+            memory_total_mb=float(telemetry.memory_total_mb),
+            memory_percent=float(telemetry.memory_percent),
+            temperature_c=telemetry.temperature_c,
         )
         with self._lock:
             self._gpu_samples.append(sample)
 
-        if temp is not None:
-            LOGGER.debug("GPU temp: %.1f°C", temp)
-            if temp >= 85:
+        if sample.temperature_c is not None:
+            LOGGER.debug("GPU temp: %.1f°C", sample.temperature_c)
+            if sample.temperature_c >= 85:
                 LOGGER.warning(
                     "GPU temperature %.1f°C exceeds threshold; consider switching to latency profile.",
-                    temp,
+                    sample.temperature_c,
                 )
 
     # ------------------------------------------------------------------
@@ -231,7 +209,18 @@ class MetricsCollector:
             if gpu_samples
             else 0.0
         )
+        peak_gpu_util = max((sample["utilization_percent"] for sample in gpu_samples), default=0.0)
+        avg_gpu_mem_percent = (
+            sum(sample.get("memory_percent", 0.0) for sample in gpu_samples) / len(gpu_samples)
+            if gpu_samples
+            else 0.0
+        )
+        peak_gpu_mem_percent = max((sample.get("memory_percent", 0.0) for sample in gpu_samples), default=0.0)
         max_gpu_mem = max((sample["memory_used_mb"] for sample in gpu_samples), default=0.0)
+        peak_gpu_temp = max(
+            (sample["temperature_c"] for sample in gpu_samples if sample.get("temperature_c") is not None),
+            default=None,
+        )
         avg_system_mem = (
             sum(sample["system_memory_percent"] for sample in cpu_samples) / len(cpu_samples)
             if cpu_samples
@@ -268,7 +257,11 @@ class MetricsCollector:
             "cpu_samples": cpu_samples,
             "aggregates": {
                 "average_gpu_utilization": avg_gpu_util,
+                "peak_gpu_utilization": peak_gpu_util,
+                "average_gpu_memory_percent": avg_gpu_mem_percent,
+                "peak_gpu_memory_percent": peak_gpu_mem_percent,
                 "max_gpu_memory_mb": max_gpu_mem,
+                "peak_gpu_temperature_c": peak_gpu_temp,
                 "average_system_memory_percent": avg_system_mem,
                 "max_system_memory_percent": max_system_mem,
                 "average_cpu_utilization_per_core": avg_cpu_per_core,
