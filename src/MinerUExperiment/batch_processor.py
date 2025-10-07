@@ -61,7 +61,7 @@ class BatchProcessorConfig:
     retry_delay: float = 10.0
     progress_interval: float = 5.0
     mineru_cli: str = "mineru"
-    mineru_backend: str = "vlm-vllm-engine"
+    mineru_backend: str = "pipeline"
     mineru_extra_args: Sequence[str] = field(default_factory=tuple)
     env_overrides: Dict[str, str] = field(default_factory=dict)
     log_progress: bool = True
@@ -183,13 +183,27 @@ def _worker_env(config: BatchProcessorConfig) -> Dict[str, str]:
     env.update(config.env_overrides)
     env.setdefault("OMP_NUM_THREADS", str(config.omp_threads))
     env.setdefault("MKL_NUM_THREADS", str(config.mkl_threads))
-    env.setdefault("MINERU_VLLM_GPU_MEMORY_UTILIZATION", f"{config.gpu_memory_utilization:.2f}")
-    env.setdefault("MINERU_VLLM_TENSOR_PARALLEL_SIZE", str(config.tensor_parallel_size))
-    env.setdefault("MINERU_VLLM_DATA_PARALLEL_SIZE", str(config.data_parallel_size))
-    env.setdefault("MINERU_VLLM_MAX_MODEL_LEN", str(config.max_model_len))
-    env.setdefault("MINERU_VLLM_BLOCK_SIZE", str(config.block_size))
-    env.setdefault("MINERU_VLLM_SWAP_SPACE_MB", str(config.swap_space_mb))
-    env.setdefault("MINERU_VLLM_DTYPE", config.dtype)
+
+    if "vllm" in config.mineru_backend:
+        env.setdefault("MINERU_VLLM_GPU_MEMORY_UTILIZATION", f"{config.gpu_memory_utilization:.2f}")
+        env.setdefault("MINERU_VLLM_TENSOR_PARALLEL_SIZE", str(config.tensor_parallel_size))
+        env.setdefault("MINERU_VLLM_DATA_PARALLEL_SIZE", str(config.data_parallel_size))
+        env.setdefault("MINERU_VLLM_MAX_MODEL_LEN", str(config.max_model_len))
+        env.setdefault("MINERU_VLLM_BLOCK_SIZE", str(config.block_size))
+        env.setdefault("MINERU_VLLM_SWAP_SPACE_MB", str(config.swap_space_mb))
+        env.setdefault("MINERU_VLLM_DTYPE", config.dtype)
+    else:
+        for key in (
+            "MINERU_VLLM_GPU_MEMORY_UTILIZATION",
+            "MINERU_VLLM_TENSOR_PARALLEL_SIZE",
+            "MINERU_VLLM_DATA_PARALLEL_SIZE",
+            "MINERU_VLLM_MAX_MODEL_LEN",
+            "MINERU_VLLM_BLOCK_SIZE",
+            "MINERU_VLLM_SWAP_SPACE_MB",
+            "MINERU_VLLM_DTYPE",
+        ):
+            env.pop(key, None)
+
     return env
 
 

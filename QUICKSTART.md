@@ -58,7 +58,7 @@ ls -lh MDFilesCreated/
 ## Batch Processing (Change 2)
 
 ```bash
-# Process all PDFs in PDFsToProcess with 14 workers
+# Process all PDFs in PDFsToProcess with default pipeline backend (CPU/GPU mixed)
 python scripts/process_batch.py --workers 14
 
 # Custom directories
