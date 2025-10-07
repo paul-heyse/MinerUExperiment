@@ -82,7 +82,13 @@ def main() -> int:
 
     stem = pdf_path.stem
     (output_dir / f"{stem}.md").write_text(f"# {stem}\\nProcessed", encoding="utf-8")
-    (output_dir / f"{stem}_content_list.json").write_text("{}", encoding="utf-8")
+    content_list = [
+        {"type": "text", "content": f"{stem} Title", "text_level": 1},
+        {"type": "text", "content": "Body paragraph."},
+    ]
+    (output_dir / f"{stem}_content_list.json").write_text(
+        json.dumps(content_list), encoding="utf-8"
+    )
     (output_dir / f"{stem}_middle.json").write_text("{}", encoding="utf-8")
     (output_dir / f"{stem}_model.json").write_text("{}", encoding="utf-8")
     (output_dir / f"{stem}_layout.pdf").write_bytes(b"%PDF-1.4\\n%")
@@ -267,6 +273,10 @@ def test_batch_processor_processes_pdfs_without_duplicates(tmp_path: Path, fake_
         assert (document_dir / "content_list.json").exists()
         assert (document_dir / "middle.json").exists()
         assert (document_dir / "model.json").exists()
+        structured_path = document_dir / f"{stem}.structured.md"
+        assert structured_path.exists()
+        structured_contents = structured_path.read_text(encoding="utf-8")
+        assert f"# {stem} Title" in structured_contents
         assert _attempts_for(pdf) == (3 if pdf == retry_pdf else 1)
 
     assert failed_path_for(failure_pdf).exists()

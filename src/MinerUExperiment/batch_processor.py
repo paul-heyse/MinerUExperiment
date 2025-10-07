@@ -22,6 +22,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 import psutil
 
+from .markdown_builder import MarkdownGenerationError, generate_structured_markdown
 from .metrics import MetricsCollector
 from .mineru_config import load_config, write_config
 from .worker_coordinator import CoordinatorConfig, WorkerCoordinator, ensure_directories
@@ -239,15 +240,40 @@ def _move_outputs(
         "*_middle.json": "middle.json",
         "*_model.json": "model.json",
     }
+    content_list_destination: Optional[Path] = None
     for pattern, relative_name in structured_files.items():
         source = first_match(pattern)
         if source is None:
             continue
         destination = document_dir / relative_name
         shutil.copy2(source, destination)
+        if pattern == "*_content_list.json":
+            content_list_destination = destination
         if destination not in written_set:
             written.append(destination)
             written_set.add(destination)
+
+    if content_list_destination is not None:
+        structured_output = document_dir / f"{stem.name}.structured.md"
+        try:
+            structured_path = generate_structured_markdown(
+                content_list_destination, output_path=structured_output
+            )
+        except FileNotFoundError as exc:
+            LOGGER.error("Failed to load content list for %s: %s", stem.name, exc)
+        except MarkdownGenerationError as exc:
+            LOGGER.error(
+                "Failed to generate structured Markdown for %s: %s", stem.name, exc
+            )
+        except Exception:  # pragma: no cover - unexpected
+            LOGGER.exception(
+                "Unexpected error during structured Markdown generation for %s",
+                stem.name,
+            )
+        else:
+            if structured_path not in written_set:
+                written.append(structured_path)
+                written_set.add(structured_path)
 
     artifact_files = {
         "*_layout.pdf": "layout.pdf",
