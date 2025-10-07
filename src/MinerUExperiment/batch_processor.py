@@ -155,6 +155,20 @@ def _environment_snapshot(config: BatchProcessorConfig) -> Dict[str, str]:
     return status
 
 
+def _resolve_executable(executable: str) -> Optional[str]:
+    """Return the resolved path for *executable* when it is runnable."""
+
+    resolved = shutil.which(executable)
+    if resolved:
+        return resolved
+
+    candidate = Path(executable)
+    if candidate.exists() and os.access(candidate, os.X_OK):
+        return str(candidate.resolve())
+
+    return None
+
+
 def _relative_to(path: Path, parent: Path) -> Path:
     try:
         return path.relative_to(parent)
@@ -687,12 +701,17 @@ class BatchProcessor:
         progress_enabled = self.config.log_progress and total_jobs > 0
 
         with ProgressBar(
-            total=5,
+            total=6,
             desc="Setup",
             unit="step",
             enabled=progress_enabled,
             leave=True,
         ) as setup_bar:
+            setup_bar.set_postfix(environment_status)
+            setup_bar.update()
+
+            preflight_status = self._run_preflight_checks()
+            environment_status = {**environment_status, **preflight_status}
             setup_bar.set_postfix(environment_status)
             setup_bar.update()
 
@@ -1120,6 +1139,65 @@ class BatchProcessor:
 
         LOGGER.info("Falling back to float16 due to missing bfloat16 support")
         return "float16"
+
+    def _run_preflight_checks(self) -> Dict[str, str]:
+        """Validate environment dependencies before spawning workers."""
+
+        status: Dict[str, str] = {}
+
+        cli_path = _resolve_executable(self.config.mineru_cli)
+        if not cli_path:
+            raise BatchProcessorError(
+                "MinerU CLI executable not found. Ensure 'mineru' is installed and "
+                f"accessible as '{self.config.mineru_cli}'."
+            )
+        status["cli"] = cli_path
+
+        missing_modules: List[str] = []
+        for module_name in ("torch", "vllm"):
+            try:
+                importlib.import_module(module_name)
+            except ModuleNotFoundError:
+                missing_modules.append(module_name)
+            except Exception as exc:  # pragma: no cover - defensive
+                raise BatchProcessorError(
+                    f"Failed to import required module '{module_name}': {exc}"
+                ) from exc
+
+        if missing_modules:
+            module_list = ", ".join(sorted(missing_modules))
+            raise BatchProcessorError(
+                "Missing required Python modules: "
+                f"{module_list}. Install them before running batch processing."
+            )
+
+        status["dependencies"] = "ok"
+
+        try:
+            self.config.output_dir.mkdir(parents=True, exist_ok=True)
+        except Exception as exc:
+            raise BatchProcessorError(
+                f"Failed to prepare output directory {self.config.output_dir}: {exc}"
+            ) from exc
+
+        probe_path = self.config.output_dir / f".mineru_write_test_{uuid.uuid4().hex}"
+        try:
+            probe_path.write_bytes(b"")
+            probe_path.unlink()
+        except Exception as exc:
+            raise BatchProcessorError(
+                f"Output directory {self.config.output_dir} is not writable: {exc}"
+            ) from exc
+
+        status["output"] = "ok"
+        LOGGER.info(
+            "Preflight validation succeeded: cli=%s dependencies=%s output_dir=%s",
+            status["cli"],
+            status["dependencies"],
+            self.config.output_dir,
+        )
+        status.setdefault("preflight", "ok")
+        return status
 
     def _validate_resources(self) -> None:
         total_ram = psutil.virtual_memory().total
