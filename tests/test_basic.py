@@ -138,6 +138,7 @@ def test_process_pdf_success(
         output_dir=output_dir,
         config=config,
         warmup=False,
+        show_progress=False,
     )
 
     assert isinstance(result, MineruProcessResult)
@@ -180,6 +181,7 @@ def test_process_pdf_missing_output(
         output_dir=output_dir,
         config=config,
         warmup=False,
+        show_progress=False,
     )
 
     assert not result.success

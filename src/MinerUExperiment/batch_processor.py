@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import gc
+import importlib
+import importlib.util
 import logging
 import multiprocessing as mp
 import os
@@ -25,6 +27,7 @@ import psutil
 from .markdown_builder import MarkdownGenerationError, generate_structured_markdown
 from .metrics import MetricsCollector
 from .mineru_config import load_config, write_config
+from .progress import ProgressBar
 from .worker_coordinator import CoordinatorConfig, WorkerCoordinator, ensure_directories
 
 LOGGER = logging.getLogger(__name__)
@@ -124,6 +127,32 @@ class BatchProcessorConfig:
             raise ValueError("worker_memory_limit_gb must be positive")
         if self.reserved_system_cores < 0:
             raise ValueError("reserved_system_cores must be >= 0")
+
+
+def _load_optional_module(name: str):
+    spec = importlib.util.find_spec(name)
+    if spec is None:
+        return None
+    return importlib.import_module(name)
+
+
+def _environment_snapshot(config: BatchProcessorConfig) -> Dict[str, str]:
+    status: Dict[str, str] = {
+        "backend": config.mineru_backend,
+        "workers": str(config.workers),
+    }
+    torch_module = _load_optional_module("torch")
+    if torch_module is None:
+        status["cuda"] = "torch missing"
+    elif torch_module.cuda.is_available() and torch_module.cuda.device_count() > 0:
+        status["cuda"] = torch_module.cuda.get_device_name(0)
+    else:
+        status["cuda"] = "unavailable"
+
+    status["vllm_module"] = "available" if importlib.util.find_spec("vllm") else "missing"
+    cli_path = shutil.which(config.mineru_cli)
+    status["cli"] = cli_path or "not found"
+    return status
 
 
 def _relative_to(path: Path, parent: Path) -> Path:
@@ -632,96 +661,251 @@ class BatchProcessor:
             metrics.start()
             self._metrics = metrics
 
-        self._validate_resources()
-        self._configure_mineru()
+        environment_status = _environment_snapshot(self.config)
+        progress_enabled = self.config.log_progress and total_jobs > 0
 
-        self._start_time = time.perf_counter()
-        self._install_signal_handlers()
-        self._start_workers()
-        self._start_resource_monitor()
+        with ProgressBar(
+            total=5,
+            desc="Setup",
+            unit="step",
+            enabled=progress_enabled,
+            leave=True,
+        ) as setup_bar:
+            setup_bar.set_postfix(environment_status)
+            setup_bar.update()
+
+            self._validate_resources()
+            setup_bar.set_postfix({**environment_status, "resources": "ok"})
+            setup_bar.update()
+
+            self._configure_mineru()
+            environment_status = {**environment_status, "dtype": self.config.dtype}
+            setup_bar.set_postfix(environment_status)
+            setup_bar.update()
+
+            self._start_time = time.perf_counter()
+            self._install_signal_handlers()
+            setup_bar.set_postfix({**environment_status, "signals": "ready"})
+            setup_bar.update()
+
+            self._start_workers()
+            self._start_resource_monitor()
+            setup_bar.set_postfix({**environment_status, "workers": str(self.config.workers)})
+            setup_bar.update()
 
         processed = succeeded = failed = skipped = 0
         last_progress_time = time.perf_counter()
+        counted_documents: set[str] = set()
+        worker_bars: Dict[str, ProgressBar] = {}
+
+        def worker_position(label: str) -> int:
+            try:
+                return int(label) + 1
+            except (ValueError, TypeError):
+                return (len(worker_bars) % max(self.config.workers, 1)) + 1
 
         try:
-            while self._any_worker_alive():
-                try:
-                    message = self._status_queue.get(timeout=self.config.progress_interval)
-                except queue.Empty:
-                    message = None
+            with ProgressBar(
+                total=total_jobs,
+                desc="Documents",
+                unit="doc",
+                enabled=progress_enabled,
+                leave=True,
+                position=0,
+            ) as overall_bar:
+                overall_bar.set_postfix(
+                    {
+                        "success": succeeded,
+                        "failed": failed,
+                        "remaining": total_jobs,
+                        "cuda": environment_status.get("cuda", "n/a"),
+                        "vllm": environment_status.get("backend", self.config.mineru_backend),
+                        "vllm_mod": environment_status.get("vllm_module", "unknown"),
+                        "cli": environment_status.get("cli", "not found"),
+                    }
+                )
 
-                if message:
-                    msg_type = message.get("type")
-                    if msg_type == "pdf_start" and metrics:
-                        metrics.record_pdf_start(
-                            pdf=str(message.get("pdf", "")),
-                            worker=str(message.get("worker")),
-                            attempt=int(message.get("attempt", 1)),
-                            start_monotonic=message.get("start_monotonic"),
-                            start_wall=message.get("start_wall"),
-                        )
-                        continue
-                    if msg_type == "pdf_finished" and metrics:
-                        metrics.record_pdf_end(
-                            pdf=str(message.get("pdf", "")),
-                            worker=str(message.get("worker")),
-                            success=bool(message.get("success", False)),
-                            attempts=int(message.get("attempts", 1)),
-                            error=message.get("error"),
-                        )
-                        continue
-                    if msg_type == "success":
-                        succeeded += 1
-                        processed += 1
-                        LOGGER.debug(
-                            "PDF processed: %s (worker %s)",
-                            message.get("pdf"),
-                            message.get("worker"),
-                        )
-                    elif msg_type in {"failure", "permanent_failure"}:
-                        failed += 1
-                        processed += 1
-                        LOGGER.error(
-                            "PDF failed: %s (worker %s) error=%s",
-                            message.get("pdf"),
-                            message.get("worker"),
-                            message.get("error"),
-                        )
-                    elif msg_type == "retry":
-                        LOGGER.warning(
-                            "Retry %d/%d for %s due to %s",
-                            message.get("attempt"),
-                            message.get("max_attempts"),
-                            message.get("pdf"),
-                            message.get("error"),
-                        )
-                    elif msg_type == "info":
+                while self._any_worker_alive():
+                    try:
+                        message = self._status_queue.get(timeout=self.config.progress_interval)
+                    except queue.Empty:
+                        message = None
+
+                    if message:
+                        msg_type = message.get("type")
+                        worker_label = str(message.get("worker", ""))
+                        pdf_label = str(message.get("pdf", ""))
+
+                        if msg_type == "pdf_start":
+                            if metrics:
+                                metrics.record_pdf_start(
+                                    pdf=pdf_label,
+                                    worker=worker_label,
+                                    attempt=int(message.get("attempt", 1)),
+                                    start_monotonic=message.get("start_monotonic"),
+                                    start_wall=message.get("start_wall"),
+                                )
+                            if progress_enabled:
+                                bar = worker_bars.pop(worker_label, None)
+                                if bar:
+                                    bar.close()
+                                description = f"{Path(pdf_label).name or 'document'} [{worker_label}]"
+                                worker_bar = ProgressBar(
+                                    total=1,
+                                    desc=description,
+                                    unit="doc",
+                                    enabled=True,
+                                    leave=False,
+                                    position=worker_position(worker_label),
+                                )
+                                worker_bar.set_postfix(
+                                    {
+                                        "status": "processing",
+                                        "attempt": int(message.get("attempt", 1)),
+                                    }
+                                )
+                                worker_bars[worker_label] = worker_bar
+                            continue
+
+                        if msg_type == "pdf_finished":
+                            if metrics:
+                                metrics.record_pdf_end(
+                                    pdf=pdf_label,
+                                    worker=worker_label,
+                                    success=bool(message.get("success", False)),
+                                    attempts=int(message.get("attempts", 1)),
+                                    error=message.get("error"),
+                                )
+                            if progress_enabled:
+                                bar = worker_bars.pop(worker_label, None)
+                                if bar:
+                                    status_text = "success" if message.get("success") else "failed"
+                                    postfix: Dict[str, object] = {
+                                        "status": status_text,
+                                        "attempts": int(message.get("attempts", 1)),
+                                    }
+                                    duration = message.get("duration_seconds")
+                                    if duration is not None:
+                                        postfix["secs"] = f"{float(duration):.2f}"
+                                    if message.get("error"):
+                                        postfix["error"] = str(message.get("error"))
+                                    bar.set_postfix(postfix)  # type: ignore[arg-type]
+                                    bar.update()
+                                    bar.close()
+                            continue
+
+                        if msg_type == "success":
+                            if pdf_label not in counted_documents:
+                                counted_documents.add(pdf_label)
+                                succeeded += 1
+                                processed += 1
+                                LOGGER.debug(
+                                    "PDF processed: %s (worker %s)",
+                                    pdf_label,
+                                    worker_label,
+                                )
+                                overall_bar.update(1)
+                                remaining = max(total_jobs - processed, 0)
+                                overall_bar.set_postfix(
+                                    {
+                                        "success": succeeded,
+                                        "failed": failed,
+                                        "remaining": remaining,
+                                        "cuda": environment_status.get("cuda", "n/a"),
+                                        "vllm": environment_status.get(
+                                            "backend", self.config.mineru_backend
+                                        ),
+                                        "vllm_mod": environment_status.get(
+                                            "vllm_module", "unknown"
+                                        ),
+                                        "cli": environment_status.get("cli", "not found"),
+                                    }
+                                )
+                            continue
+
+                        if msg_type == "permanent_failure":
+                            if pdf_label not in counted_documents:
+                                counted_documents.add(pdf_label)
+                                failed += 1
+                                processed += 1
+                                LOGGER.error(
+                                    "PDF failed: %s (worker %s) error=%s",
+                                    pdf_label,
+                                    worker_label,
+                                    message.get("error"),
+                                )
+                                overall_bar.update(1)
+                                remaining = max(total_jobs - processed, 0)
+                                overall_bar.set_postfix(
+                                    {
+                                        "success": succeeded,
+                                        "failed": failed,
+                                        "remaining": remaining,
+                                        "cuda": environment_status.get("cuda", "n/a"),
+                                        "vllm": environment_status.get(
+                                            "backend", self.config.mineru_backend
+                                        ),
+                                        "vllm_mod": environment_status.get(
+                                            "vllm_module", "unknown"
+                                        ),
+                                        "cli": environment_status.get("cli", "not found"),
+                                    }
+                                )
+                            continue
+
+                        if msg_type == "failure":
+                            LOGGER.error(
+                                "PDF failed: %s (worker %s) error=%s",
+                                pdf_label,
+                                worker_label,
+                                message.get("error"),
+                            )
+                            continue
+
+                        if msg_type == "retry":
+                            retry_message = (
+                                f"Retry {message.get('attempt')}/{message.get('max_attempts')}"
+                                f" for {pdf_label} due to {message.get('error')}"
+                            )
+                            overall_bar.write(retry_message)
+                            LOGGER.warning(
+                                "Retry %d/%d for %s due to %s",
+                                message.get("attempt"),
+                                message.get("max_attempts"),
+                                pdf_label,
+                                message.get("error"),
+                            )
+                            continue
+
+                        if msg_type == "info":
+                            info_message = f"Worker {worker_label}: {message.get('message')}"
+                            overall_bar.write(info_message)
+                            LOGGER.info("Worker %s: %s", worker_label, message.get("message"))
+                            continue
+
+                    now = time.perf_counter()
+                    if (
+                        self.config.log_progress
+                        and now - last_progress_time >= self.config.progress_interval
+                    ):
+                        last_progress_time = now
+                        remaining = max(total_jobs - processed, 0)
                         LOGGER.info(
-                            "Worker %s: %s", message.get("worker"), message.get("message")
+                            "Progress: %d/%d processed (success=%d, failed=%d, remaining=%d)",
+                            processed,
+                            total_jobs,
+                            succeeded,
+                            failed,
+                            remaining,
                         )
 
-                now = time.perf_counter()
-                if (
-                    self.config.log_progress
-                    and now - last_progress_time >= self.config.progress_interval
-                ):
-                    last_progress_time = now
-                    remaining = max(total_jobs - processed, 0)
-                    LOGGER.info(
-                        "Progress: %d/%d processed (success=%d, failed=%d, remaining=%d)",
-                        processed,
-                        total_jobs,
-                        succeeded,
-                        failed,
-                        remaining,
-                    )
-
-                if processed >= total_jobs:
-                    LOGGER.info("All jobs processed; signalling workers to stop")
-                    self._shutdown_event.set()
-                    break
-
+                    if processed >= total_jobs:
+                        LOGGER.info("All jobs processed; signalling workers to stop")
+                        self._shutdown_event.set()
+                        break
         finally:
+            for bar in worker_bars.values():
+                bar.close()
             self._shutdown_event.set()
             self._join_workers()
             self._stop_resource_monitor()

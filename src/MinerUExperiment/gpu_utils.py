@@ -6,6 +6,8 @@ import time
 from dataclasses import dataclass
 from typing import Dict, Iterable, Optional, Sequence
 
+from .progress import ProgressBar
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -93,6 +95,7 @@ def warmup_gpu(
     *,
     iterations: int = 3,
     tensor_size: int = 262_144,
+    show_progress: bool = True,
 ) -> float:
     torch = _import_torch()
     if not torch.cuda.is_available():
@@ -106,9 +109,20 @@ def warmup_gpu(
 
     torch.cuda.synchronize(device)
     start = time.perf_counter()
-    for _ in range(iterations):
-        _ = torch.matmul(dummy_input, dummy_weight)
-        torch.cuda.synchronize(device)
+    with ProgressBar(
+        total=iterations,
+        enabled=show_progress,
+        leave=False,
+        desc=f"GPU warmup cuda:{device_index}",
+        unit="iter",
+    ) as bar:
+        for iteration in range(1, iterations + 1):
+            iteration_start = time.perf_counter()
+            _ = torch.matmul(dummy_input, dummy_weight)
+            torch.cuda.synchronize(device)
+            bar.update(1)
+            elapsed_iter = time.perf_counter() - iteration_start
+            bar.set_postfix({"iter_s": f"{elapsed_iter:.2f}"})
 
     elapsed = time.perf_counter() - start
     LOGGER.info(
