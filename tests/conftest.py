@@ -107,10 +107,9 @@ if __name__ == "__main__":
 
 
 class DummyMetrics:
-    def __init__(self, *, output_dir: Path, sample_interval: float, gpu_index: int, benchmark_mode: bool):
+    def __init__(self, *, output_dir: Path, sample_interval: float, benchmark_mode: bool):
         self.output_dir = output_dir
         self.sample_interval = sample_interval
-        self.gpu_index = gpu_index
         self.benchmark_mode = benchmark_mode
         self.started = False
 

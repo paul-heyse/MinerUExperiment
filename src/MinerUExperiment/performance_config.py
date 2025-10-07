@@ -30,13 +30,6 @@ class PerformanceProfile:
     memory_pause_threshold: float = 0.90
     memory_resume_threshold: float = 0.75
     cpu_pause_threshold: float = 0.92
-    gpu_pause_utilization: float = 0.97
-    gpu_resume_utilization: float = 0.90
-    gpu_pause_memory: float = 0.92
-    gpu_resume_memory: float = 0.85
-    gpu_pause_temperature_c: float = 85.0
-    gpu_resume_temperature_c: float = 80.0
-    gpu_monitor_interval: float = 5.0
 
 
 def _default_env() -> Dict[str, str]:
@@ -64,13 +57,6 @@ PROFILE_REGISTRY: Dict[str, PerformanceProfile] = {
         memory_pause_threshold=0.92,
         memory_resume_threshold=0.80,
         cpu_pause_threshold=0.95,
-        gpu_pause_utilization=0.99,
-        gpu_resume_utilization=0.94,
-        gpu_pause_memory=0.95,
-        gpu_resume_memory=0.88,
-        gpu_pause_temperature_c=87.0,
-        gpu_resume_temperature_c=80.0,
-        gpu_monitor_interval=4.0,
     ),
     "balanced": PerformanceProfile(
         name="balanced",
@@ -89,13 +75,6 @@ PROFILE_REGISTRY: Dict[str, PerformanceProfile] = {
         memory_pause_threshold=0.88,
         memory_resume_threshold=0.72,
         cpu_pause_threshold=0.92,
-        gpu_pause_utilization=0.97,
-        gpu_resume_utilization=0.90,
-        gpu_pause_memory=0.92,
-        gpu_resume_memory=0.85,
-        gpu_pause_temperature_c=85.0,
-        gpu_resume_temperature_c=80.0,
-        gpu_monitor_interval=5.0,
     ),
     "latency": PerformanceProfile(
         name="latency",
@@ -117,13 +96,6 @@ PROFILE_REGISTRY: Dict[str, PerformanceProfile] = {
         memory_pause_threshold=0.85,
         memory_resume_threshold=0.70,
         cpu_pause_threshold=0.90,
-        gpu_pause_utilization=0.95,
-        gpu_resume_utilization=0.85,
-        gpu_pause_memory=0.88,
-        gpu_resume_memory=0.78,
-        gpu_pause_temperature_c=83.0,
-        gpu_resume_temperature_c=76.0,
-        gpu_monitor_interval=6.0,
     ),
 }
 
@@ -185,13 +157,6 @@ def apply_profile_to_config(
     config["memory_pause_threshold"] = profile.memory_pause_threshold
     config["memory_resume_threshold"] = profile.memory_resume_threshold
     config["cpu_pause_threshold"] = profile.cpu_pause_threshold
-    config["gpu_pause_utilization_threshold"] = profile.gpu_pause_utilization
-    config["gpu_resume_utilization_threshold"] = profile.gpu_resume_utilization
-    config["gpu_pause_memory_threshold"] = profile.gpu_pause_memory
-    config["gpu_resume_memory_threshold"] = profile.gpu_resume_memory
-    config["gpu_pause_temperature_c"] = profile.gpu_pause_temperature_c
-    config["gpu_resume_temperature_c"] = profile.gpu_resume_temperature_c
-    config["gpu_monitor_interval"] = profile.gpu_monitor_interval
     combined_args = tuple(config.get("mineru_extra_args", tuple()))
     combined_args += worker_settings.mineru_extra_args
     combined_args += profile.mineru_extra_args

@@ -153,8 +153,7 @@ def test_validate_pdf_processing_failure_raises(
         )
 
 
-def test_metrics_collector_generates_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("MinerUExperiment.metrics.sample_gpu_telemetry", lambda *_: None)
+def test_metrics_collector_generates_report(tmp_path: Path) -> None:
     collector = MetricsCollector(output_dir=tmp_path, sample_interval=0.01)
     collector.start()
     collector.record_pdf_start("doc.pdf", "worker-1", 1)
@@ -176,11 +175,10 @@ def test_metrics_collector_generates_report(tmp_path: Path, monkeypatch: pytest.
     report = load_performance_report(report_path)
     assert report["summary"]["succeeded"] == 1
     aggregates = report["aggregates"]
-    assert aggregates["average_gpu_utilization"] >= 0.0
-    assert aggregates["average_gpu_memory_percent"] >= 0.0
-    assert aggregates["peak_gpu_utilization"] >= 0.0
-    assert aggregates["peak_gpu_memory_percent"] >= 0.0
-    assert aggregates["peak_gpu_temperature_c"] is None
+    assert aggregates["average_system_memory_percent"] >= 0.0
+    assert aggregates["max_system_memory_percent"] >= 0.0
+    assert isinstance(aggregates["average_cpu_utilization_per_core"], list)
+    assert aggregates["average_io_wait_percent"] >= 0.0
 
     comparison_report = tmp_path / "comparison.json"
     alt_path = tmp_path / "alt.json"

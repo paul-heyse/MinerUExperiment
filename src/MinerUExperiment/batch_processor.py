@@ -27,13 +27,7 @@ from datetime import datetime, timezone
 
 import psutil
 
-from .gpu_utils import (
-    GPUTelemetry,
-    GPUUnavailableError,
-    clear_cuda_error,
-    sample_gpu_telemetry,
-    warmup_gpu,
-)
+from .gpu_utils import GPUUnavailableError, clear_cuda_error, warmup_gpu
 from .markdown_builder import MarkdownGenerationError, generate_structured_markdown
 from .metrics import MetricsCollector
 from .mineru_config import load_config, write_config
@@ -87,13 +81,6 @@ class BatchProcessorConfig:
     memory_resume_threshold: float = 0.70
     cpu_pause_threshold: float = 0.90
     resource_monitor_interval: float = 5.0
-    gpu_monitor_interval: float = 5.0
-    gpu_pause_memory_threshold: float = 0.92
-    gpu_resume_memory_threshold: float = 0.85
-    gpu_pause_utilization_threshold: float = 0.97
-    gpu_resume_utilization_threshold: float = 0.90
-    gpu_pause_temperature_c: Optional[float] = 85.0
-    gpu_resume_temperature_c: Optional[float] = 80.0
     profile: str = "balanced"
     max_workers: int = 14
     max_model_len: int = 16384
@@ -144,35 +131,6 @@ class BatchProcessorConfig:
             raise ValueError("cpu_pause_threshold must be between 0 and 1")
         if self.resource_monitor_interval <= 0:
             raise ValueError("resource_monitor_interval must be > 0")
-        if self.gpu_monitor_interval <= 0:
-            raise ValueError("gpu_monitor_interval must be > 0")
-        if not (
-            0 < self.gpu_resume_memory_threshold < self.gpu_pause_memory_threshold <= 1
-        ):
-            raise ValueError(
-                "GPU memory thresholds must satisfy 0 < resume < pause <= 1"
-            )
-        if not (
-            0 < self.gpu_resume_utilization_threshold < self.gpu_pause_utilization_threshold <= 1
-        ):
-            raise ValueError(
-                "GPU utilization thresholds must satisfy 0 < resume < pause <= 1"
-            )
-        if self.gpu_pause_temperature_c is not None:
-            if self.gpu_pause_temperature_c <= 0:
-                raise ValueError("gpu_pause_temperature_c must be positive")
-            if self.gpu_resume_temperature_c is None:
-                raise ValueError(
-                    "gpu_resume_temperature_c must be set when pause temperature is provided"
-                )
-            if self.gpu_resume_temperature_c <= 0:
-                raise ValueError("gpu_resume_temperature_c must be positive")
-            if self.gpu_resume_temperature_c >= self.gpu_pause_temperature_c:
-                raise ValueError("GPU resume temperature must be lower than pause temperature")
-        elif self.gpu_resume_temperature_c is not None:
-            raise ValueError(
-                "gpu_resume_temperature_c cannot be set without gpu_pause_temperature_c"
-            )
         if self.io_buffer_size < 1_048_576:
             raise ValueError("io_buffer_size must be at least 1MB")
         if self.worker_memory_limit_gb <= 0:
@@ -792,11 +750,6 @@ class BatchProcessor:
         self._resource_thread: Optional[threading.Thread] = None
         self._metrics: Optional[MetricsCollector] = None
         self._shared_stats = self._mp_context.Array("i", [0, 0, 0])  # processed, success, failure
-        self._resource_lock = threading.Lock()
-        self._latest_gpu_sample: Optional[GPUTelemetry] = None
-        self._gpu_warning_emitted = False
-        self._gpu_saturation_since: Optional[float] = None
-        self._gpu_below_resume_since: Optional[float] = None
 
     # ------------------------------------------------------------------
 
@@ -827,8 +780,7 @@ class BatchProcessor:
             )
             metrics = MetricsCollector(
                 output_dir=metrics_dir,
-                sample_interval=self.config.gpu_monitor_interval,
-                gpu_index=0,
+                sample_interval=self.config.resource_monitor_interval,
                 benchmark_mode=self.config.benchmark,
             )
             metrics.start()
@@ -1522,59 +1474,17 @@ class BatchProcessor:
         except Exception as exc:
             LOGGER.warning("GPU warmup failed: %s", exc)
 
-    def _current_gpu_snapshot(self) -> Optional[GPUTelemetry]:
-        with self._resource_lock:
-            return self._latest_gpu_sample
-
     def _augment_postfix(self, base: Dict[str, object]) -> Dict[str, object]:
         postfix = dict(base)
-        sample = self._current_gpu_snapshot()
-        if sample is not None:
-            postfix["gpu"] = f"{sample.utilization_percent:.0f}%"
-            postfix["gpu_mem"] = f"{sample.memory_percent:.0f}%"
-            if sample.temperature_c is not None:
-                postfix["gpu_temp"] = f"{sample.temperature_c:.0f}C"
-        elif self._gpu_warning_emitted:
-            postfix.setdefault("gpu", "n/a")
         if self._throttle_event.is_set():
             postfix["throttle"] = "on"
         return postfix
 
     def _resource_monitor_loop(self) -> None:
-        next_gpu_sample = 0.0
-        sample_interval = min(self.config.resource_monitor_interval, self.config.gpu_monitor_interval)
-
+        sample_interval = self.config.resource_monitor_interval
         while not self._shutdown_event.is_set():
-            now = time.time()
             mem = psutil.virtual_memory()
             cpu = psutil.cpu_percent(interval=None)
-
-            latest_sample = self._current_gpu_snapshot()
-            telemetry: Optional[GPUTelemetry]
-
-            if now >= next_gpu_sample:
-                telemetry = sample_gpu_telemetry()
-                next_gpu_sample = now + self.config.gpu_monitor_interval
-                if telemetry is None:
-                    if latest_sample is not None:
-                        with self._resource_lock:
-                            self._latest_gpu_sample = None
-                        latest_sample = None
-                    if latest_sample is None and not self._gpu_warning_emitted:
-                        LOGGER.warning(
-                            "GPU telemetry unavailable; GPU guardrails disabled for this run."
-                        )
-                        self._gpu_warning_emitted = True
-                    if latest_sample is None:
-                        self._gpu_saturation_since = None
-                        if self._gpu_below_resume_since is None:
-                            self._gpu_below_resume_since = now
-                else:
-                    with self._resource_lock:
-                        self._latest_gpu_sample = telemetry
-                    latest_sample = telemetry
-            else:
-                telemetry = None
 
             throttle_reasons: List[str] = []
             cpu_ratio = cpu / 100.0
@@ -1589,57 +1499,8 @@ class BatchProcessor:
                     f"cpu={cpu:.1f}%>={self.config.cpu_pause_threshold * 100:.0f}%"
                 )
 
-            gpu_over_pause = False
-            gpu_info = None
-            if latest_sample is not None:
-                util_ratio = latest_sample.utilization_percent / 100.0
-                mem_percent_ratio = latest_sample.memory_percent / 100.0
-                temperature = latest_sample.temperature_c
-                gpu_info = (
-                    f"gpu util={latest_sample.utilization_percent:.0f}% "
-                    f"mem={latest_sample.memory_percent:.0f}%"
-                )
-                if temperature is not None:
-                    gpu_info += f" temp={temperature:.0f}C"
-
-                if util_ratio >= self.config.gpu_pause_utilization_threshold or mem_percent_ratio >= self.config.gpu_pause_memory_threshold:
-                    gpu_over_pause = True
-                if (
-                    self.config.gpu_pause_temperature_c is not None
-                    and temperature is not None
-                    and temperature >= self.config.gpu_pause_temperature_c
-                ):
-                    gpu_over_pause = True
-
-                if gpu_over_pause:
-                    throttle_reasons.append(gpu_info)
-                    self._gpu_saturation_since = now
-                    self._gpu_below_resume_since = None
-                else:
-                    within_resume = (
-                        util_ratio <= self.config.gpu_resume_utilization_threshold
-                        and mem_percent_ratio <= self.config.gpu_resume_memory_threshold
-                        and (
-                            self.config.gpu_resume_temperature_c is None
-                            or temperature is None
-                            or temperature <= self.config.gpu_resume_temperature_c
-                        )
-                    )
-                    if within_resume:
-                        if self._gpu_below_resume_since is None:
-                            self._gpu_below_resume_since = now
-                    else:
-                        self._gpu_below_resume_since = None
-            else:
-                if self._gpu_saturation_since is not None:
-                    self._gpu_saturation_since = None
-                if self._gpu_below_resume_since is None:
-                    self._gpu_below_resume_since = now
-
             if throttle_reasons:
                 message = "; ".join(throttle_reasons)
-                if gpu_info and gpu_info not in throttle_reasons:
-                    message = f"{message}; {gpu_info}"
                 if not self._throttle_event.is_set():
                     LOGGER.warning("Resource saturation detected (%s); throttling", message)
                 self._throttle_event.set()
@@ -1649,19 +1510,12 @@ class BatchProcessor:
                     and mem_ratio <= self.config.memory_resume_threshold
                     and cpu_ratio <= self.config.cpu_pause_threshold * 0.85
                 )
-
-                gpu_ready = True
-                if self._gpu_saturation_since is not None:
-                    gpu_ready = False
-                    if self._gpu_below_resume_since is not None and now - self._gpu_below_resume_since >= self.config.gpu_monitor_interval:
-                        gpu_ready = True
-                        self._gpu_saturation_since = None
-
-                if can_resume and gpu_ready:
-                    detail = f"mem={mem.percent:.1f}% cpu={cpu:.1f}%"
-                    if gpu_info:
-                        detail = f"{detail} {gpu_info}"
-                    LOGGER.info("Resources recovered (%s); resuming", detail)
+                if can_resume:
+                    LOGGER.info(
+                        "Resources recovered (mem=%.1f%% cpu=%.1f%%); resuming",
+                        mem.percent,
+                        cpu,
+                    )
                     self._throttle_event.clear()
 
             time.sleep(sample_interval)

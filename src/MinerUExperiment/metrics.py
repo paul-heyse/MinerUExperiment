@@ -11,8 +11,6 @@ from typing import Dict, List, Optional, Sequence
 
 import psutil
 
-from .gpu_utils import sample_gpu_telemetry
-
 LOGGER = logging.getLogger(__name__)
 
 try:  # pragma: no cover - optional dependency
@@ -36,16 +34,6 @@ class PDFMetric:
 
 
 @dataclass
-class GPUSample:
-    timestamp: float
-    utilization_percent: float
-    memory_used_mb: float
-    memory_total_mb: float
-    memory_percent: float
-    temperature_c: Optional[float]
-
-
-@dataclass
 class CPUSample:
     timestamp: float
     per_core_percent: List[float]
@@ -59,12 +47,10 @@ class MetricsCollector:
         *,
         output_dir: Path,
         sample_interval: float = 5.0,
-        gpu_index: int = 0,
         benchmark_mode: bool = False,
     ):
         self.output_dir = output_dir
         self.sample_interval = sample_interval
-        self.gpu_index = gpu_index
         self.benchmark_mode = benchmark_mode
 
         self._stop_event = threading.Event()
@@ -73,7 +59,6 @@ class MetricsCollector:
 
         self._active: Dict[tuple[str, str], tuple[float, int, float]] = {}
         self._records: List[PDFMetric] = []
-        self._gpu_samples: List[GPUSample] = []
         self._cpu_samples: List[CPUSample] = []
 
     # ------------------------------------------------------------------
@@ -141,7 +126,6 @@ class MetricsCollector:
     def _sample_loop(self) -> None:
         while not self._stop_event.is_set():
             self._collect_cpu_sample()
-            self._collect_gpu_sample()
             self._stop_event.wait(self.sample_interval)
 
     def _collect_cpu_sample(self) -> None:
@@ -158,30 +142,6 @@ class MetricsCollector:
         with self._lock:
             self._cpu_samples.append(sample)
 
-    def _collect_gpu_sample(self) -> None:
-        telemetry = sample_gpu_telemetry(self.gpu_index)
-        if telemetry is None:
-            return
-
-        sample = GPUSample(
-            timestamp=time.time(),
-            utilization_percent=float(telemetry.utilization_percent),
-            memory_used_mb=float(telemetry.memory_used_mb),
-            memory_total_mb=float(telemetry.memory_total_mb),
-            memory_percent=float(telemetry.memory_percent),
-            temperature_c=telemetry.temperature_c,
-        )
-        with self._lock:
-            self._gpu_samples.append(sample)
-
-        if sample.temperature_c is not None:
-            LOGGER.debug("GPU temp: %.1f°C", sample.temperature_c)
-            if sample.temperature_c >= 85:
-                LOGGER.warning(
-                    "GPU temperature %.1f°C exceeds threshold; consider switching to latency profile.",
-                    sample.temperature_c,
-                )
-
     # ------------------------------------------------------------------
 
     def generate_report(
@@ -194,7 +154,6 @@ class MetricsCollector:
         report_path = self.output_dir / "performance_report.json"
         with self._lock:
             pdf_data = [metric.__dict__ for metric in self._records]
-            gpu_samples = [sample.__dict__ for sample in self._gpu_samples]
             cpu_samples = [sample.__dict__ for sample in self._cpu_samples]
 
         total_duration = max(summary.duration_seconds, 1e-9)
@@ -203,23 +162,6 @@ class MetricsCollector:
             sum(metric.duration_seconds for metric in self._records if metric.success) / summary.succeeded
             if summary.succeeded
             else 0.0
-        )
-        avg_gpu_util = (
-            sum(sample["utilization_percent"] for sample in gpu_samples) / len(gpu_samples)
-            if gpu_samples
-            else 0.0
-        )
-        peak_gpu_util = max((sample["utilization_percent"] for sample in gpu_samples), default=0.0)
-        avg_gpu_mem_percent = (
-            sum(sample.get("memory_percent", 0.0) for sample in gpu_samples) / len(gpu_samples)
-            if gpu_samples
-            else 0.0
-        )
-        peak_gpu_mem_percent = max((sample.get("memory_percent", 0.0) for sample in gpu_samples), default=0.0)
-        max_gpu_mem = max((sample["memory_used_mb"] for sample in gpu_samples), default=0.0)
-        peak_gpu_temp = max(
-            (sample["temperature_c"] for sample in gpu_samples if sample.get("temperature_c") is not None),
-            default=None,
         )
         avg_system_mem = (
             sum(sample["system_memory_percent"] for sample in cpu_samples) / len(cpu_samples)
@@ -253,15 +195,8 @@ class MetricsCollector:
                 "avg_seconds_per_pdf": average_pdf_duration,
             },
             "pdf_metrics": pdf_data,
-            "gpu_samples": gpu_samples,
             "cpu_samples": cpu_samples,
             "aggregates": {
-                "average_gpu_utilization": avg_gpu_util,
-                "peak_gpu_utilization": peak_gpu_util,
-                "average_gpu_memory_percent": avg_gpu_mem_percent,
-                "peak_gpu_memory_percent": peak_gpu_mem_percent,
-                "max_gpu_memory_mb": max_gpu_mem,
-                "peak_gpu_temperature_c": peak_gpu_temp,
                 "average_system_memory_percent": avg_system_mem,
                 "max_system_memory_percent": max_system_mem,
                 "average_cpu_utilization_per_core": avg_cpu_per_core,
@@ -358,7 +293,6 @@ def shutil_which(command: str) -> Optional[str]:
 __all__ = [
     "MetricsCollector",
     "PDFMetric",
-    "GPUSample",
     "CPUSample",
     "load_performance_report",
     "compare_reports",

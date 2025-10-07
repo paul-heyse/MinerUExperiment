@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import logging
 import os
-import shutil
-import subprocess
 import time
 from dataclasses import dataclass
 from typing import Dict, Iterable, Optional, Sequence
@@ -11,23 +9,6 @@ from typing import Dict, Iterable, Optional, Sequence
 from .progress import ProgressBar
 
 LOGGER = logging.getLogger(__name__)
-
-
-@dataclass(frozen=True)
-class GPUTelemetry:
-    """Current utilization snapshot for a GPU."""
-
-    index: int
-    utilization_percent: float
-    memory_used_mb: float
-    memory_total_mb: float
-    temperature_c: Optional[float] = None
-
-    @property
-    def memory_percent(self) -> float:
-        if self.memory_total_mb <= 0:
-            return 0.0
-        return (self.memory_used_mb / self.memory_total_mb) * 100.0
 
 
 class GPUUnavailableError(RuntimeError):
@@ -202,109 +183,6 @@ def is_gpu_available(device_index: int = 0) -> bool:
     except GPUUnavailableError as exc:
         LOGGER.warning("GPU check failed: %s", exc)
         return False
-
-
-def _query_nvml(device_index: int) -> Optional[GPUTelemetry]:  # pragma: no cover - requires NVML
-    try:
-        import pynvml
-    except ModuleNotFoundError:
-        return None
-
-    try:
-        pynvml.nvmlInit()
-    except Exception as exc:
-        LOGGER.debug("NVML init failed: %s", exc)
-        return None
-
-    try:
-        handle = pynvml.nvmlDeviceGetHandleByIndex(device_index)
-        utilization = pynvml.nvmlDeviceGetUtilizationRates(handle)
-        memory = pynvml.nvmlDeviceGetMemoryInfo(handle)
-        try:
-            temperature = float(
-                pynvml.nvmlDeviceGetTemperature(handle, pynvml.NVML_TEMPERATURE_GPU)
-            )
-        except Exception:
-            temperature = None
-
-        return GPUTelemetry(
-            index=device_index,
-            utilization_percent=float(utilization.gpu),
-            memory_used_mb=float(memory.used) / (1024 * 1024),
-            memory_total_mb=float(memory.total) / (1024 * 1024),
-            temperature_c=temperature,
-        )
-    except Exception as exc:
-        LOGGER.debug("NVML telemetry query failed: %s", exc)
-        return None
-    finally:
-        try:
-            pynvml.nvmlShutdown()
-        except Exception:
-            pass
-
-
-def _query_nvidia_smi(device_index: int) -> Optional[GPUTelemetry]:
-    executable = shutil.which("nvidia-smi")
-    if not executable:
-        return None
-
-    query = [
-        executable,
-        "--query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu",
-        "--format=csv,noheader,nounits",
-        f"--id={device_index}",
-    ]
-
-    try:
-        result = subprocess.run(
-            query,
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=2.0,
-        )
-    except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
-        return None
-
-    line = result.stdout.strip().splitlines()
-    if not line:
-        return None
-
-    parts = [item.strip() for item in line[0].split(",")]
-    try:
-        util = float(parts[0])
-        mem_used = float(parts[1])
-        mem_total = float(parts[2]) if len(parts) > 2 else 0.0
-        temp = float(parts[3]) if len(parts) > 3 else None
-    except (ValueError, IndexError):
-        return None
-
-    if mem_total <= 0:
-        # Attempt to derive total memory from PyTorch if possible.
-        try:
-            info = get_gpu_info(device_index)
-            mem_total = float(info.total_memory_mb)
-        except GPUUnavailableError:
-            mem_total = 0.0
-
-    return GPUTelemetry(
-        index=device_index,
-        utilization_percent=util,
-        memory_used_mb=mem_used,
-        memory_total_mb=mem_total,
-        temperature_c=temp,
-    )
-
-
-def sample_gpu_telemetry(device_index: int = 0) -> Optional[GPUTelemetry]:
-    """Return current GPU telemetry, or ``None`` if unavailable."""
-
-    telemetry = _query_nvml(device_index)
-    if telemetry is not None:
-        return telemetry
-
-    return _query_nvidia_smi(device_index)
 
 
 def enforce_gpu_environment(

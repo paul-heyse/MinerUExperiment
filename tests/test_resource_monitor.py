@@ -11,8 +11,6 @@ if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from MinerUExperiment.batch_processor import BatchProcessor, BatchProcessorConfig
-from MinerUExperiment.gpu_utils import GPUTelemetry
-
 
 def _make_config(tmp_path: Path) -> BatchProcessorConfig:
     input_dir = tmp_path / "inputs"
@@ -33,42 +31,27 @@ def _make_config(tmp_path: Path) -> BatchProcessorConfig:
         env_overrides={},
         log_progress=False,
         resource_monitor_interval=0.1,
-        gpu_monitor_interval=0.1,
         worker_memory_limit_gb=0.1,
         dtype="float16",
     )
 
 
-def test_gpu_saturation_triggers_and_clears_throttle(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_resource_monitor_throttles_and_resumes(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     config = _make_config(tmp_path)
     processor = BatchProcessor(config)
 
-    samples = [
-        GPUTelemetry(index=0, utilization_percent=99.0, memory_used_mb=23000.0, memory_total_mb=24576.0, temperature_c=88.0),
-        GPUTelemetry(index=0, utilization_percent=82.0, memory_used_mb=15000.0, memory_total_mb=24576.0, temperature_c=75.0),
-        GPUTelemetry(index=0, utilization_percent=80.0, memory_used_mb=14000.0, memory_total_mb=24576.0, temperature_c=74.0),
-    ]
+    mem_samples = [92.0, 65.0, 58.0]
+    cpu_samples = [95.0, 72.0, 35.0]
 
-    def fake_sample() -> GPUTelemetry:
-        if samples:
-            return samples.pop(0)
-        return GPUTelemetry(
-            index=0,
-            utilization_percent=78.0,
-            memory_used_mb=13000.0,
-            memory_total_mb=24576.0,
-            temperature_c=72.0,
-        )
+    def fake_virtual_memory() -> SimpleNamespace:
+        percent = mem_samples.pop(0) if mem_samples else 58.0
+        return SimpleNamespace(percent=percent)
 
-    monkeypatch.setattr("MinerUExperiment.batch_processor.sample_gpu_telemetry", lambda: fake_sample())
-    monkeypatch.setattr(
-        "MinerUExperiment.batch_processor.psutil.virtual_memory",
-        lambda: SimpleNamespace(percent=48.0),
-    )
-    monkeypatch.setattr(
-        "MinerUExperiment.batch_processor.psutil.cpu_percent",
-        lambda interval=None: 22.0,
-    )
+    def fake_cpu_percent(interval=None) -> float:
+        return cpu_samples.pop(0) if cpu_samples else 35.0
+
+    monkeypatch.setattr("MinerUExperiment.batch_processor.psutil.virtual_memory", fake_virtual_memory)
+    monkeypatch.setattr("MinerUExperiment.batch_processor.psutil.cpu_percent", fake_cpu_percent)
 
     time_box = {"value": 0.0}
 
