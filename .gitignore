@@ -1,10 +1,48 @@
 .venv/
-.pytest_cache/
-__pycache__/
-*.pyc
+venv/
 .env
 .envrc.local
+.python-version
+
+# Python caches & artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.so
+.pytest_cache/
+.mypy_cache/
+.tox/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Build / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# IDE / editor files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
 .ipynb_checkpoints/
 .DS_Store
-PDFsToProcess/*
-MDFilesCreated/*
+Thumbs.db
+
+# Local data directories (large or generated)
+PDFsToProcess/
+MDFilesCreated/
+performance_metrics/
+tmp/
+tmp*
+logs/
+
+# Runtime artifacts
+*.log
+*.sqlite3
+
+# Project-specific generated files
+MinerUExperiment.egg-info/
