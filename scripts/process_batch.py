@@ -254,13 +254,23 @@ def main(argv: List[str]) -> int:
         logging.exception("Batch processing failed: %s", exc)
         return 1
 
-    logging.info(
-        "Summary: processed=%d success=%d failed=%d duration=%.2fs",
-        summary.processed,
-        summary.succeeded,
-        summary.failed,
-        summary.duration_seconds,
-    )
+    if summary.failure_report:
+        logging.info(
+            "Summary: processed=%d success=%d failed=%d duration=%.2fs failure_report=%s",
+            summary.processed,
+            summary.succeeded,
+            summary.failed,
+            summary.duration_seconds,
+            summary.failure_report,
+        )
+    else:
+        logging.info(
+            "Summary: processed=%d success=%d failed=%d duration=%.2fs (no failures)",
+            summary.processed,
+            summary.succeeded,
+            summary.failed,
+            summary.duration_seconds,
+        )
     return 0 if summary.failed == 0 else 2
 
 

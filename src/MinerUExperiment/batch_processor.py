@@ -3,6 +3,7 @@ from __future__ import annotations
 import gc
 import importlib
 import importlib.util
+import json
 import logging
 import multiprocessing as mp
 import os
@@ -21,6 +22,7 @@ import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
+from datetime import datetime, timezone
 
 import psutil
 
@@ -49,6 +51,8 @@ class BatchSummary:
     failed: int
     skipped: int
     duration_seconds: float
+    failures: List[Dict[str, object]] = field(default_factory=list)
+    failure_report: Optional[Path] = None
 
 
 @dataclass
@@ -298,7 +302,9 @@ def _move_outputs(
                 written.append(doc_specific_destination)
                 written_set.add(doc_specific_destination)
         if pattern == "*_content_list.json":
-            content_list_destination = destination
+            content_list_destination = (
+                doc_specific_destination if doc_specific_destination.exists() else destination
+            )
         if destination not in written_set:
             written.append(destination)
             written_set.add(destination)
@@ -738,12 +744,40 @@ class BatchProcessor:
         last_progress_time = time.perf_counter()
         counted_documents: set[str] = set()
         worker_bars: Dict[str, ProgressBar] = {}
+        failure_attempts: Dict[str, List[Dict[str, object]]] = {}
+        failure_attempt_counts: Dict[str, int] = {}
+        failure_errors: Dict[str, Optional[str]] = {}
+        failure_order: List[str] = []
 
         def worker_position(label: str) -> int:
             try:
                 return int(label) + 1
             except (ValueError, TypeError):
                 return (len(worker_bars) % max(self.config.workers, 1)) + 1
+
+        def record_attempt(label: str, attempt_number: int, error: Optional[str]) -> None:
+            attempts = failure_attempts.setdefault(label, [])
+            if attempt_number <= 0:
+                attempt_number = len(attempts) + 1
+            if attempts and attempts[-1].get("number") == attempt_number:
+                if error is not None:
+                    attempts[-1]["error"] = error
+                return
+            entry: Dict[str, object] = {"number": attempt_number}
+            if error is not None:
+                entry["error"] = error
+            attempts.append(entry)
+
+        def relative_label(label: str) -> str:
+            pdf_path = Path(label)
+            try:
+                return str(pdf_path.relative_to(self.config.input_dir))
+            except ValueError:
+                try:
+                    resolved = pdf_path.resolve()
+                    return str(resolved.relative_to(self.config.input_dir))
+                except Exception:  # pragma: no cover - fallback path handling
+                    return pdf_path.name or str(pdf_path)
 
         try:
             with ProgressBar(
@@ -865,6 +899,20 @@ class BatchProcessor:
                             continue
 
                         if msg_type == "permanent_failure":
+                            error_value = message.get("error")
+                            error_text = (
+                                str(error_value) if error_value is not None else None
+                            )
+                            attempts_value = int(message.get("attempts", 0))
+                            record_attempt(pdf_label, attempts_value, error_text)
+                            failure_attempt_counts[pdf_label] = (
+                                attempts_value
+                                if attempts_value > 0
+                                else len(failure_attempts.get(pdf_label, []))
+                            )
+                            failure_errors[pdf_label] = error_text
+                            if pdf_label not in failure_order:
+                                failure_order.append(pdf_label)
                             if pdf_label not in counted_documents:
                                 counted_documents.add(pdf_label)
                                 failed += 1
@@ -895,6 +943,11 @@ class BatchProcessor:
                             continue
 
                         if msg_type == "failure":
+                            error_value = message.get("error")
+                            error_text = (
+                                str(error_value) if error_value is not None else None
+                            )
+                            record_attempt(pdf_label, int(message.get("attempt", 0)), error_text)
                             LOGGER.error(
                                 "PDF failed: %s (worker %s) error=%s",
                                 pdf_label,
@@ -904,6 +957,11 @@ class BatchProcessor:
                             continue
 
                         if msg_type == "retry":
+                            error_value = message.get("error")
+                            error_text = (
+                                str(error_value) if error_value is not None else None
+                            )
+                            record_attempt(pdf_label, int(message.get("attempt", 0)), error_text)
                             retry_message = (
                                 f"Retry {message.get('attempt')}/{message.get('max_attempts')}"
                                 f" for {pdf_label} due to {message.get('error')}"
@@ -955,12 +1013,58 @@ class BatchProcessor:
                 metrics.stop()
 
         duration = time.perf_counter() - (self._start_time or time.perf_counter())
-        LOGGER.info(
-            "Batch processing complete: %d succeeded, %d failed in %.2fs",
-            succeeded,
-            failed,
-            duration,
-        )
+
+        failure_details: List[Dict[str, object]] = []
+        for label in failure_order:
+            attempts = [dict(item) for item in failure_attempts.get(label, [])]
+            attempt_count = failure_attempt_counts.get(label, len(attempts))
+            if attempt_count <= 0:
+                attempt_count = len(attempts)
+            final_error = failure_errors.get(label)
+            entry: Dict[str, object] = {
+                "pdf": relative_label(label),
+                "attempt_count": attempt_count,
+                "attempts": attempts,
+                "final_error": final_error,
+            }
+            failure_details.append(entry)
+
+        failure_report_path: Optional[Path] = None
+        if failure_details:
+            report_payload = {
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "total_failures": len(failure_details),
+                "failures": failure_details,
+            }
+            failure_report_path = self.config.output_dir / "failed_documents.json"
+            failure_report_path.parent.mkdir(parents=True, exist_ok=True)
+            failure_report_path.write_text(
+                json.dumps(report_payload, indent=2, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            LOGGER.info(
+                "Failure report saved to %s (%d documents)",
+                failure_report_path,
+                len(failure_details),
+            )
+        else:
+            LOGGER.info("No permanent failures encountered; skipping failure report generation")
+
+        if failure_report_path:
+            LOGGER.info(
+                "Batch processing complete: %d succeeded, %d failed in %.2fs (failure report: %s)",
+                succeeded,
+                failed,
+                duration,
+                failure_report_path,
+            )
+        else:
+            LOGGER.info(
+                "Batch processing complete: %d succeeded, %d failed in %.2fs (no failures)",
+                succeeded,
+                failed,
+                duration,
+            )
 
         summary = BatchSummary(
             total=total_jobs,
@@ -969,6 +1073,8 @@ class BatchProcessor:
             failed=failed,
             skipped=skipped,
             duration_seconds=duration,
+            failures=failure_details,
+            failure_report=failure_report_path,
         )
 
         if metrics and summary.processed > 0:
