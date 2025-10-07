@@ -109,6 +109,46 @@ def verify_gpu(required_name_fragment: str = "RTX 5090", device_index: int = 0) 
     return gpu_info
 
 
+def clear_cuda_error(device_index: int = 0) -> None:
+    """Attempt to reset CUDA error state for *device_index*."""
+
+    try:
+        torch = _import_torch()
+    except GPUUnavailableError:
+        return
+
+    if not torch.cuda.is_available():
+        return
+
+    try:
+        torch.cuda.set_device(device_index)
+    except Exception as exc:  # pragma: no cover - defensive
+        LOGGER.debug("Unable to select CUDA device %s: %s", device_index, exc)
+        return
+
+    try:
+        torch.cuda.synchronize()
+    except Exception as exc:  # pragma: no cover - defensive
+        LOGGER.debug("CUDA synchronize failed during reset: %s", exc)
+
+    try:
+        torch.cuda.empty_cache()
+    except Exception as exc:  # pragma: no cover - defensive
+        LOGGER.debug("CUDA empty_cache failed during reset: %s", exc)
+
+    try:
+        torch.cuda.ipc_collect()
+    except Exception as exc:  # pragma: no cover - optional
+        LOGGER.debug("CUDA ipc_collect failed during reset: %s", exc)
+
+    try:
+        reset_stats = getattr(torch.cuda, "reset_peak_memory_stats", None)
+        if callable(reset_stats):
+            reset_stats()
+    except Exception as exc:  # pragma: no cover - optional
+        LOGGER.debug("CUDA reset_peak_memory_stats failed during reset: %s", exc)
+
+
 def warmup_gpu(
     device_index: int = 0,
     *,
@@ -119,6 +159,8 @@ def warmup_gpu(
     torch = _import_torch()
     if not torch.cuda.is_available():
         raise GPUUnavailableError("CUDA is not available; cannot warm up GPU.")
+
+    clear_cuda_error(device_index)
 
     device = torch.device(f"cuda:{device_index}")
     matrix_dim = int(tensor_size ** 0.5)

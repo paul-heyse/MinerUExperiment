@@ -30,6 +30,7 @@ import psutil
 from .gpu_utils import (
     GPUTelemetry,
     GPUUnavailableError,
+    clear_cuda_error,
     sample_gpu_telemetry,
     warmup_gpu,
 )
@@ -95,9 +96,6 @@ class BatchProcessorConfig:
     gpu_resume_temperature_c: Optional[float] = 80.0
     profile: str = "balanced"
     max_workers: int = 14
-    gpu_memory_utilization: float = 0.90
-    tensor_parallel_size: int = 1
-    data_parallel_size: int = 1
     max_model_len: int = 16384
     block_size: int = 16
     swap_space_mb: int = 8192
@@ -175,8 +173,6 @@ class BatchProcessorConfig:
             raise ValueError(
                 "gpu_resume_temperature_c cannot be set without gpu_pause_temperature_c"
             )
-        if not (0.0 < self.gpu_memory_utilization <= 1.0):
-            raise ValueError("gpu_memory_utilization must be between 0 and 1")
         if self.io_buffer_size < 1_048_576:
             raise ValueError("io_buffer_size must be at least 1MB")
         if self.worker_memory_limit_gb <= 0:
@@ -277,9 +273,6 @@ def _worker_env(config: BatchProcessorConfig) -> Dict[str, str]:
     if "vllm" in config.mineru_backend:
         for key in PIPELINE_ENV_KEYS:
             env.pop(key, None)
-        env.setdefault("MINERU_VLLM_GPU_MEMORY_UTILIZATION", f"{config.gpu_memory_utilization:.2f}")
-        env.setdefault("MINERU_VLLM_TENSOR_PARALLEL_SIZE", str(config.tensor_parallel_size))
-        env.setdefault("MINERU_VLLM_DATA_PARALLEL_SIZE", str(config.data_parallel_size))
         env.setdefault("MINERU_VLLM_MAX_MODEL_LEN", str(config.max_model_len))
         env.setdefault("MINERU_VLLM_BLOCK_SIZE", str(config.block_size))
         env.setdefault("MINERU_VLLM_SWAP_SPACE_MB", str(config.swap_space_mb))
@@ -726,9 +719,6 @@ def _config_from_dict(config_dict: Dict[str, object]) -> BatchProcessorConfig:
     resource_monitor_interval = float(config_dict.get("resource_monitor_interval", 5.0))
     profile = str(config_dict.get("profile", "balanced"))
     max_workers = int(config_dict.get("max_workers", workers))
-    gpu_memory_utilization = float(config_dict.get("gpu_memory_utilization", 0.90))
-    tensor_parallel_size = int(config_dict.get("tensor_parallel_size", 1))
-    data_parallel_size = int(config_dict.get("data_parallel_size", 1))
     max_model_len = int(config_dict.get("max_model_len", 16384))
     block_size = int(config_dict.get("block_size", 16))
     swap_space_mb = int(config_dict.get("swap_space_mb", 8192))
@@ -773,9 +763,6 @@ def _config_from_dict(config_dict: Dict[str, object]) -> BatchProcessorConfig:
         resource_monitor_interval=resource_monitor_interval,
         profile=profile,
         max_workers=max_workers,
-        gpu_memory_utilization=gpu_memory_utilization,
-        tensor_parallel_size=tensor_parallel_size,
-        data_parallel_size=data_parallel_size,
         max_model_len=max_model_len,
         block_size=block_size,
         swap_space_mb=swap_space_mb,
@@ -1265,9 +1252,6 @@ class BatchProcessor:
             "resource_monitor_interval": self.config.resource_monitor_interval,
             "profile": self.config.profile,
             "max_workers": self.config.max_workers,
-            "gpu_memory_utilization": self.config.gpu_memory_utilization,
-            "tensor_parallel_size": self.config.tensor_parallel_size,
-            "data_parallel_size": self.config.data_parallel_size,
             "max_model_len": self.config.max_model_len,
             "block_size": self.config.block_size,
             "swap_space_mb": self.config.swap_space_mb,
@@ -1343,35 +1327,8 @@ class BatchProcessor:
     def _configure_mineru(self) -> None:
         config = load_config()
         dtype = self._resolve_dtype_preference()
-        if "vllm" in self.config.mineru_backend:
-            try:
-                config.update_vllm_settings(
-                    data_parallel_size=self.config.data_parallel_size,
-                    tensor_parallel_size=self.config.tensor_parallel_size,
-                    max_model_len=self.config.max_model_len,
-                    dtype=dtype,
-                    gpu_memory_utilization=self.config.gpu_memory_utilization,
-                    block_size=self.config.block_size,
-                    swap_space_mb=self.config.swap_space_mb,
-                )
-            except AttributeError:
-                # For compatibility with existing configs lacking new fields
-                config.vllm_settings.data_parallel_size = self.config.data_parallel_size
-                config.vllm_settings.tensor_parallel_size = self.config.tensor_parallel_size
-                config.vllm_settings.max_model_len = self.config.max_model_len
-                config.vllm_settings.dtype = dtype
-                config.vllm_settings.gpu_memory_utilization = self.config.gpu_memory_utilization
-                config.vllm_settings.block_size = self.config.block_size
-                config.vllm_settings.swap_space_mb = self.config.swap_space_mb
-
-            LOGGER.info(
-                "Configured MinerU vLLM settings: gpu_mem_util=%.2f dtype=%s max_seq=%d",
-                self.config.gpu_memory_utilization,
-                dtype,
-                self.config.max_model_len,
-            )
-        else:
-            config.backend_name = self.config.mineru_backend
+        if self.config.mineru_backend == "pipeline":
+            config.backend_name = "pipeline"
             config.model_source = self.config.mineru_model_source
             config.device = self.config.mineru_device_mode
             LOGGER.info(
@@ -1379,6 +1336,23 @@ class BatchProcessor:
                 config.backend_name,
                 config.device,
                 config.model_source,
+            )
+        else:
+            try:
+                config.update_vllm_settings(
+                    max_model_len=self.config.max_model_len,
+                    dtype=dtype,
+                    block_size=self.config.block_size,
+                    swap_space_mb=self.config.swap_space_mb,
+                )
+            except AttributeError:
+                config.vllm_settings.max_model_len = self.config.max_model_len
+                config.vllm_settings.dtype = dtype
+                config.vllm_settings.block_size = self.config.block_size
+                config.vllm_settings.swap_space_mb = self.config.swap_space_mb
+
+            LOGGER.info(
+                "Configured MinerU vLLM settings for backend=%s", self.config.mineru_backend
             )
 
         write_config(config)
@@ -1420,8 +1394,6 @@ class BatchProcessor:
 
         missing_modules: List[str] = []
         required_modules = ["torch"]
-        if "vllm" in self.config.mineru_backend:
-            required_modules.append("vllm")
         for module_name in required_modules:
             try:
                 importlib.import_module(module_name)
@@ -1486,10 +1458,21 @@ class BatchProcessor:
 
             if torch.cuda.is_available():
                 total_gpu = float(torch.cuda.get_device_properties(0).total_memory)
-                reserved_gpu = total_gpu * self.config.gpu_memory_utilization
+                # Reserve a conservative 90% of GPU memory unless the user specifies a lower
+                # virtual VRAM cap. This prevents accidental overallocation when multiple
+                # processes share the device.
+                reserved_ratio = 0.90
+                if self.config.mineru_virtual_vram_limit_gb is not None:
+                    reserved_ratio = min(
+                        reserved_ratio,
+                        self.config.mineru_virtual_vram_limit_gb
+                        * (1024**3)
+                        / max(total_gpu, 1.0),
+                    )
+                reserved_gpu = total_gpu * reserved_ratio
                 if reserved_gpu > total_gpu * 0.98:
                     raise BatchProcessorError(
-                        "GPU memory utilization setting leaves insufficient headroom."
+                        "GPU reservation leaves insufficient headroom."
                     )
         except ModuleNotFoundError:
             LOGGER.warning("PyTorch not available; skipping GPU resource validation")
@@ -1532,6 +1515,7 @@ class BatchProcessor:
 
     def _warmup_cuda(self) -> None:
         try:
+            clear_cuda_error(0)
             warmup_gpu(0, iterations=2, tensor_size=131_072, show_progress=False)
         except GPUUnavailableError:
             LOGGER.debug("Skipping GPU warmup because no compatible GPU is available.")

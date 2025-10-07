@@ -80,16 +80,16 @@ def _profile_help() -> str:
         )
         lines.append(
             f"  {profile.name:<10} - {profile.description} (workers={profile.workers.worker_count}, "
-            f"gpu_mem={profile.vllm.gpu_memory_utilization:.2f}, "
+            f"mem/worker={profile.workers.memory_per_worker_gb:.1f}GB, "
             f"throttle util={profile.gpu_pause_utilization * 100:.0f}%, "
-            f"mem={profile.gpu_pause_memory * 100:.0f}%{temp_info})"
+            f"pause mem={profile.gpu_pause_memory * 100:.0f}%{temp_info})"
         )
     return "\n".join(lines)
 
 
 def parse_args(argv: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Batch process PDFs with MinerU (vLLM backend)",
+        description="Batch process PDFs with MinerU pipeline backend",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=_profile_help(),
     )
@@ -272,9 +272,6 @@ def build_config(args: argparse.Namespace) -> BatchProcessorConfig:
         "resource_monitor_interval": 5.0,
         "profile": args.profile,
         "max_workers": 14,
-        "gpu_memory_utilization": 0.90,
-        "tensor_parallel_size": 1,
-        "data_parallel_size": 1,
         "max_model_len": 16384,
         "block_size": 16,
         "swap_space_mb": 8192,

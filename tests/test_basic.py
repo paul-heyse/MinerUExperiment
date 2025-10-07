@@ -92,8 +92,10 @@ def test_apply_profile_to_config_updates_workers() -> None:
     apply_profile_to_config(config=config_values, profile=profile, workers_override=None)
 
     assert config_values["workers"] == profile.workers.worker_count
-    assert config_values["gpu_memory_utilization"] == profile.vllm.gpu_memory_utilization
     assert "OMP_NUM_THREADS" in config_values["env_overrides"]
+    assert config_values["env_overrides"]["OMP_NUM_THREADS"] == str(profile.workers.omp_threads)
+    assert config_values["env_overrides"]["MKL_NUM_THREADS"] == str(profile.workers.mkl_threads)
+    assert config_values["mineru_extra_args"][-len(profile.workers.mineru_extra_args) :] == profile.workers.mineru_extra_args
     assert config_values["cpu_affinity_plan"]
 
 

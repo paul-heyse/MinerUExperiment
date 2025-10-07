@@ -8,18 +8,7 @@ LOGGER_NAME = "MinerUExperiment.performance_config"
 
 
 @dataclass(frozen=True)
-class VLLMEngineProfile:
-    gpu_memory_utilization: float
-    max_model_len: int
-    block_size: int
-    swap_space_mb: int
-    dtype: str
-    tensor_parallel_size: int = 1
-    data_parallel_size: int = 1
-
-
-@dataclass(frozen=True)
-class WorkerProfile:
+class PipelineProfile:
     worker_count: int
     max_workers: int
     memory_per_worker_gb: float
@@ -28,14 +17,14 @@ class WorkerProfile:
     omp_threads: int
     mkl_threads: int
     enable_cpu_affinity: bool = True
+    mineru_extra_args: Tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
 class PerformanceProfile:
     name: str
     description: str
-    vllm: VLLMEngineProfile
-    workers: WorkerProfile
+    workers: PipelineProfile
     mineru_extra_args: Tuple[str, ...] = ()
     env_overrides: Mapping[str, str] = field(default_factory=dict)
     memory_pause_threshold: float = 0.90
@@ -53,7 +42,6 @@ class PerformanceProfile:
 def _default_env() -> Dict[str, str]:
     return {
         "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True,garbage_collection_threshold:0.8",
-        "VLLM_SKIP_WARMUP_PROMPTS": "1",
     }
 
 
@@ -61,16 +49,7 @@ PROFILE_REGISTRY: Dict[str, PerformanceProfile] = {
     "throughput": PerformanceProfile(
         name="throughput",
         description="Maximize PDFs/hour with aggressive batching and full GPU utilization.",
-        vllm=VLLMEngineProfile(
-            gpu_memory_utilization=0.95,
-            max_model_len=16384,
-            block_size=16,
-            swap_space_mb=12288,
-            dtype="bfloat16",
-            tensor_parallel_size=1,
-            data_parallel_size=1,
-        ),
-        workers=WorkerProfile(
+        workers=PipelineProfile(
             worker_count=14,
             max_workers=14,
             memory_per_worker_gb=11.0,
@@ -79,12 +58,9 @@ PROFILE_REGISTRY: Dict[str, PerformanceProfile] = {
             omp_threads=1,
             mkl_threads=1,
             enable_cpu_affinity=True,
+            mineru_extra_args=("--batch-mode", "aggressive"),
         ),
-        mineru_extra_args=("--batch-mode", "aggressive"),
-        env_overrides={
-            **_default_env(),
-            "VLLM_WORKER_MULTIPROC_METHOD": "spawn",
-        },
+        env_overrides=_default_env(),
         memory_pause_threshold=0.92,
         memory_resume_threshold=0.80,
         cpu_pause_threshold=0.95,
@@ -99,14 +75,7 @@ PROFILE_REGISTRY: Dict[str, PerformanceProfile] = {
     "balanced": PerformanceProfile(
         name="balanced",
         description="Balanced throughput and stability with moderate GPU utilization.",
-        vllm=VLLMEngineProfile(
-            gpu_memory_utilization=0.90,
-            max_model_len=16384,
-            block_size=16,
-            swap_space_mb=10240,
-            dtype="bfloat16",
-        ),
-        workers=WorkerProfile(
+        workers=PipelineProfile(
             worker_count=12,
             max_workers=14,
             memory_per_worker_gb=10.5,
@@ -114,8 +83,8 @@ PROFILE_REGISTRY: Dict[str, PerformanceProfile] = {
             niceness=5,
             omp_threads=1,
             mkl_threads=1,
+            mineru_extra_args=("--batch-mode", "balanced"),
         ),
-        mineru_extra_args=("--batch-mode", "balanced"),
         env_overrides=_default_env(),
         memory_pause_threshold=0.88,
         memory_resume_threshold=0.72,
@@ -131,14 +100,7 @@ PROFILE_REGISTRY: Dict[str, PerformanceProfile] = {
     "latency": PerformanceProfile(
         name="latency",
         description="Minimize per-PDF latency with fewer workers and conservative GPU usage.",
-        vllm=VLLMEngineProfile(
-            gpu_memory_utilization=0.85,
-            max_model_len=12288,
-            block_size=16,
-            swap_space_mb=8192,
-            dtype="bfloat16",
-        ),
-        workers=WorkerProfile(
+        workers=PipelineProfile(
             worker_count=6,
             max_workers=8,
             memory_per_worker_gb=12.0,
@@ -146,8 +108,8 @@ PROFILE_REGISTRY: Dict[str, PerformanceProfile] = {
             niceness=0,
             omp_threads=1,
             mkl_threads=1,
+            mineru_extra_args=("--batch-mode", "low-latency"),
         ),
-        mineru_extra_args=("--batch-mode", "low-latency"),
         env_overrides={
             **_default_env(),
             "MINERU_PIPELINE_PREFETCH": "disabled",
@@ -214,13 +176,6 @@ def apply_profile_to_config(
     config["profile"] = profile.name
     config["workers"] = worker_count
     config["max_workers"] = worker_settings.max_workers
-    config["gpu_memory_utilization"] = profile.vllm.gpu_memory_utilization
-    config["tensor_parallel_size"] = profile.vllm.tensor_parallel_size
-    config["data_parallel_size"] = profile.vllm.data_parallel_size
-    config["max_model_len"] = profile.vllm.max_model_len
-    config["block_size"] = profile.vllm.block_size
-    config["swap_space_mb"] = profile.vllm.swap_space_mb
-    config["dtype"] = profile.vllm.dtype
     config["reserved_system_cores"] = worker_settings.reserved_system_cores
     config["worker_memory_limit_gb"] = worker_settings.memory_per_worker_gb
     config["worker_niceness"] = worker_settings.niceness
@@ -237,8 +192,10 @@ def apply_profile_to_config(
     config["gpu_pause_temperature_c"] = profile.gpu_pause_temperature_c
     config["gpu_resume_temperature_c"] = profile.gpu_resume_temperature_c
     config["gpu_monitor_interval"] = profile.gpu_monitor_interval
-    config.setdefault("mineru_extra_args", tuple())
-    config["mineru_extra_args"] = tuple(config["mineru_extra_args"]) + tuple(profile.mineru_extra_args)
+    combined_args = tuple(config.get("mineru_extra_args", tuple()))
+    combined_args += worker_settings.mineru_extra_args
+    combined_args += profile.mineru_extra_args
+    config["mineru_extra_args"] = combined_args
 
     env_overrides: Dict[str, str] = dict(config.get("env_overrides", {}))
     for key, value in profile.env_overrides.items():
