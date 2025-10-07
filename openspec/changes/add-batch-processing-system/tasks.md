@@ -49,8 +49,8 @@
 
 ## 7. Testing
 
-- [ ] 7.1 Test with 5+ sample PDFs
-- [ ] 7.2 Verify no duplicate processing
-- [ ] 7.3 Test graceful shutdown mid-processing
-- [ ] 7.4 Verify all outputs in MDFilesCreated
-- [ ] 7.5 Test retry logic with intentionally failing PDF
+- [x] 7.1 Test with 5+ sample PDFs
+- [x] 7.2 Verify no duplicate processing
+- [x] 7.3 Test graceful shutdown mid-processing
+- [x] 7.4 Verify all outputs in MDFilesCreated
+- [x] 7.5 Test retry logic with intentionally failing PDF
