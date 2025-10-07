@@ -14,7 +14,7 @@ from .mineru_config import (
     write_config,
 )
 from .mineru_runner import MineruInvocationError, MineruProcessResult, process_pdf
-from .metrics import MetricsCollector
+from .metrics import MetricsCollector, compare_performance_reports, load_performance_report
 from .validation import (
     RunMetrics,
     ValidationFailure,
@@ -31,6 +31,8 @@ __all__ = [
     "GPUInfo",
     "GPUUnavailableError",
     "MetricsCollector",
+    "compare_performance_reports",
+    "load_performance_report",
     "enforce_gpu_environment",
     "ensure_model_downloaded",
     "get_gpu_info",

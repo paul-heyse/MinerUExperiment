@@ -56,3 +56,6 @@ The batch processor exposes tuned profiles that map to the RTX 5090 + AMD 9950x 
 Invoke `scripts/process_batch.py --profile <balanced|throughput|latency>` to pick a profile, or
 `--benchmark` to emit a detailed `performance_report.json` containing throughput, GPU, CPU, and memory
 statistics collected during the run.
+
+Use `scripts/compare_performance_reports.py performance_report_*.json` to aggregate multiple runs into
+`performance_comparison.json` and highlight the highest-throughput and lowest-latency configurations.

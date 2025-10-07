@@ -6,9 +6,9 @@ import os
 import subprocess
 import threading
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import psutil
 
@@ -72,7 +72,6 @@ class MetricsCollector:
         self._gpu_samples: List[GPUSample] = []
         self._cpu_samples: List[CPUSample] = []
         self._start_wall: Optional[float] = None
-        self._initial_cpu_sample_taken = False
 
     # ------------------------------------------------------------------
 
@@ -253,15 +252,79 @@ class MetricsCollector:
             },
         }
 
-        if orjson is not None:
-            report_path.write_bytes(orjson.dumps(report, option=orjson.OPT_INDENT_2) + b"\n")
-        else:
-            with report_path.open("w", encoding="utf-8") as handle:
-                json.dump(report, handle, indent=2)
-                handle.write("\n")
+        _write_json(report_path, report)
 
         LOGGER.info("Performance report written to %s", report_path)
         return report_path
+
+
+def load_performance_report(path: Path) -> Dict[str, Any]:
+    data = path.read_bytes()
+    if orjson is not None:
+        return orjson.loads(data)
+    return json.loads(data.decode("utf-8"))
+
+
+def compare_performance_reports(
+    reports: Sequence[Path | str],
+    *,
+    output_path: Optional[Path] = None,
+) -> Path:
+    if len(reports) < 2:
+        raise ValueError("At least two reports are required for comparison")
+
+    normalized: List[Path] = [Path(report).expanduser().resolve() for report in reports]
+    runs: List[Dict[str, Any]] = []
+    best_throughput: Optional[Dict[str, Any]] = None
+    best_latency: Optional[Dict[str, Any]] = None
+
+    for report_path in normalized:
+        data = load_performance_report(report_path)
+        summary = data.get("summary", {})
+        throughput = float(summary.get("throughput_pdfs_per_hour", 0.0))
+        avg_seconds = float(summary.get("avg_seconds_per_pdf", 0.0))
+        run_entry = {
+            "path": str(report_path),
+            "profile": data.get("profile"),
+            "benchmark_mode": data.get("benchmark_mode", False),
+            "throughput_pdfs_per_hour": throughput,
+            "avg_seconds_per_pdf": avg_seconds,
+            "succeeded": summary.get("succeeded"),
+            "failed": summary.get("failed"),
+            "total": summary.get("total"),
+            "duration_seconds": summary.get("duration_seconds"),
+        }
+        runs.append(run_entry)
+
+        if best_throughput is None or throughput > best_throughput["throughput_pdfs_per_hour"]:
+            best_throughput = run_entry
+        if (
+            best_latency is None
+            or (avg_seconds > 0 and avg_seconds < best_latency.get("avg_seconds_per_pdf", float("inf")))
+        ):
+            best_latency = run_entry
+
+    comparison = {
+        "runs": runs,
+        "best_throughput": best_throughput,
+        "best_latency": best_latency,
+    }
+
+    base_dir = output_path.parent if output_path else normalized[0].parent
+    base_dir.mkdir(parents=True, exist_ok=True)
+    destination = output_path or (base_dir / "performance_comparison.json")
+    _write_json(destination, comparison)
+    LOGGER.info("Performance comparison written to %s", destination)
+    return destination
+
+
+def _write_json(path: Path, payload: Dict[str, Any]) -> None:
+    if orjson is not None:
+        path.write_bytes(orjson.dumps(payload, option=orjson.OPT_INDENT_2) + b"\n")
+    else:
+        with path.open("w", encoding="utf-8") as handle:
+            json.dump(payload, handle, indent=2)
+            handle.write("\n")
 
 
 def shutil_which(command: str) -> Optional[str]:
@@ -277,4 +340,6 @@ __all__ = [
     "PDFMetric",
     "GPUSample",
     "CPUSample",
+    "compare_performance_reports",
+    "load_performance_report",
 ]
