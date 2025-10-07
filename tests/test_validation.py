@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from types import SimpleNamespace
 from typing import List
@@ -9,7 +10,7 @@ import pytest
 
 import MinerUExperiment.validation as validation
 from MinerUExperiment import MineruConfig, MineruProcessResult, ValidationFailure
-from MinerUExperiment.metrics import MetricsCollector
+from MinerUExperiment.metrics import MetricsCollector, compare_performance_reports
 
 
 @pytest.fixture(name="pdf_file")
@@ -158,3 +159,47 @@ def test_metrics_collector_generates_report(tmp_path: Path) -> None:
     )
     report_path = collector.generate_report(summary=summary, profile="balanced")
     assert report_path.exists()
+
+
+def test_compare_performance_reports(tmp_path: Path) -> None:
+    report_a = tmp_path / "run_a.json"
+    report_b = tmp_path / "run_b.json"
+    report_a.write_text(
+        json.dumps(
+            {
+                "profile": "balanced",
+                "benchmark_mode": False,
+                "summary": {
+                    "throughput_pdfs_per_hour": 120.0,
+                    "avg_seconds_per_pdf": 30.0,
+                    "succeeded": 10,
+                    "failed": 0,
+                    "total": 10,
+                    "duration_seconds": 300.0,
+                },
+            }
+        )
+    )
+    report_b.write_text(
+        json.dumps(
+            {
+                "profile": "throughput",
+                "benchmark_mode": True,
+                "summary": {
+                    "throughput_pdfs_per_hour": 180.0,
+                    "avg_seconds_per_pdf": 22.0,
+                    "succeeded": 10,
+                    "failed": 0,
+                    "total": 10,
+                    "duration_seconds": 200.0,
+                },
+            }
+        )
+    )
+
+    comparison_path = compare_performance_reports([report_a, report_b])
+    comparison = json.loads(comparison_path.read_text())
+
+    assert comparison["best_throughput"]["profile"] == "throughput"
+    assert comparison["best_latency"]["profile"] == "throughput"
+    assert len(comparison["runs"]) == 2
