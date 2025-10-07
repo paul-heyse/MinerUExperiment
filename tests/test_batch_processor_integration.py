@@ -76,9 +76,12 @@ def test_batch_processor_processes_pdfs_without_duplicates(
     _set_behavior(retry_pdf, sleep=0.05, failures_before_success=2)
     success_pdfs.append(retry_pdf)
 
-    failure_pdf = input_dir / "always_fail.pdf"
-    _create_pdf(failure_pdf)
-    _set_behavior(failure_pdf, sleep=0.05, permanent_failure=True)
+    failure_pdfs = []
+    for index in range(2):
+        failure_pdf = input_dir / f"always_fail_{index}.pdf"
+        _create_pdf(failure_pdf)
+        _set_behavior(failure_pdf, sleep=0.05, permanent_failure=True)
+        failure_pdfs.append(failure_pdf)
 
     config = BatchProcessorConfig(
         input_dir=input_dir,
@@ -104,11 +107,11 @@ def test_batch_processor_processes_pdfs_without_duplicates(
     processor = BatchProcessor(config)
     summary = processor.run()
 
-    total_pdfs = len(success_pdfs) + 1
+    total_pdfs = len(success_pdfs) + len(failure_pdfs)
     assert summary.total == total_pdfs
     assert summary.processed == total_pdfs
     assert summary.succeeded == len(success_pdfs)
-    assert summary.failed == 1
+    assert summary.failed == len(failure_pdfs)
 
     for pdf in success_pdfs:
         assert done_path_for(pdf).exists()
@@ -125,8 +128,25 @@ def test_batch_processor_processes_pdfs_without_duplicates(
         assert f"# {stem} Title" in structured_contents
         assert _attempts_for(pdf) == (3 if pdf == retry_pdf else 1)
 
-    assert failed_path_for(failure_pdf).exists()
-    assert _attempts_for(failure_pdf) == 4
+    assert len(summary.failures) == len(failure_pdfs)
+    for failure_pdf in failure_pdfs:
+        assert failed_path_for(failure_pdf).exists()
+        assert _attempts_for(failure_pdf) == config.max_retries + 1
+
+    failure_report_path = output_dir / "failed_documents.json"
+    assert summary.failure_report == failure_report_path
+    assert failure_report_path.exists()
+    report_data = json.loads(failure_report_path.read_text(encoding="utf-8"))
+    assert report_data["total_failures"] == len(failure_pdfs)
+    reported_pdfs = {entry["pdf"] for entry in report_data["failures"]}
+    expected_pdfs = {str(pdf.relative_to(input_dir)) for pdf in failure_pdfs}
+    assert reported_pdfs == expected_pdfs
+    assert {entry["pdf"] for entry in summary.failures} == expected_pdfs
+    for entry in report_data["failures"]:
+        assert entry["attempt_count"] == config.max_retries + 1
+        assert entry["final_error"]
+        assert entry["attempts"]
+        assert entry["attempts"][-1]["number"] == config.max_retries + 1
 
     assert not any(input_dir.rglob(f"*{lock_path_for(success_pdfs[0]).suffix}"))
 
@@ -187,6 +207,9 @@ def test_batch_processor_graceful_shutdown(tmp_path: Path, fake_mineru: Path) ->
     assert summary.processed < len(pdfs)
     assert summary.processed == summary.succeeded
     assert summary.failed == 0
+    assert summary.failures == []
+    assert summary.failure_report is None
+    assert not (output_dir / "failed_documents.json").exists()
 
     processed_pdfs = [pdf for pdf in pdfs if done_path_for(pdf).exists()]
     assert 0 < len(processed_pdfs) < len(pdfs)
