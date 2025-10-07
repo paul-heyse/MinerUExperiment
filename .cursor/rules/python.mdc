@@ -1,0 +1,16 @@
+---
+title: Python Project Conventions
+type: always
+globs:
+  - "**/*.py"
+  - "pyproject.toml"
+  - "environment.yml"
+---
+
+# Environment & commands
+- Always use the interpreter at `./.venv/bin/python`.
+- Prefer `micromamba` with `-p ./.venv -c conda-forge`.
+- Use `pytest -q` for tests; `ruff check` for lint; `black .` for formatting.
+
+# Layout
+- Code in `src/yourpkg` (rename via scripts/init.sh), tests in `tests`, config in `.vscode/`.

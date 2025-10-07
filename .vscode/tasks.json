@@ -1,0 +1,12 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "pytest", "type": "shell", "command": "${workspaceFolder}/.venv/bin/python -m pytest -q", "group": "test" },
+    { "label": "lint", "type": "shell", "command": "${workspaceFolder}/.venv/bin/ruff check src tests && ${workspaceFolder}/.venv/bin/black --check ." },
+    { "label": "format", "type": "shell", "command": "${workspaceFolder}/.venv/bin/black ." },
+
+    { "label": "Codex: start (Auto)", "type": "shell", "command": "./scripts/codex.sh" },
+    { "label": "Codex: exec (non-interactive)", "type": "shell", "command": "./scripts/codex.sh exec \"fix the CI failure\"" }
+  ]
+}
+

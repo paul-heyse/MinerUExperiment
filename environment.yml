@@ -1,0 +1,15 @@
+name: ignored-by-path
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip
+  - ruff
+  - black
+  - mypy
+  - pytest
+  - pytest-cov
+  - ipykernel
+  - pre-commit
+  - pip:
+      - python-dotenv

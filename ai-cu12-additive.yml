@@ -1,0 +1,146 @@
+name: ai-cu12          # ignored if you use --name/--prefix on update
+channels:
+  - conda-forge
+  - rapidsai          # RAPIDS CUDA-12 builds
+  - nvidia
+  - pytorch           # only used if you ever choose conda PyTorch (we use pip below)
+# Keep your global/micromamba config at channel_priority=strict for stability.
+
+variables:
+  # Give pip access to PyTorch CU128 wheels + NVIDIA's PyPI (used below as well).
+  PIP_EXTRA_INDEX_URL: "https://download.pytorch.org/whl/cu128 https://pypi.nvidia.com"
+  TF_CPP_MIN_LOG_LEVEL: "1"
+
+dependencies:
+  # ---- Core tooling (leave your existing Python as-is)
+  - pip
+  - ipykernel
+  - jupyterlab
+
+  # ---- Pin CUDA MAJOR/MINOR for conda-forge packages (keeps the env on CUDA 12.x)
+  # Adjust to another 12.x if you need; 12.9 is widely available across conda-forge.
+  - cuda-version=12.9
+
+  # ---- Numerics / data (CPU baseline)
+  - numpy
+  - scipy
+  - pandas
+  - pyarrow
+  - polars
+  - numexpr
+  - xarray
+  - networkx
+  - sympy
+  - joblib
+  - scikit-learn
+  - scikit-image
+  - statsmodels
+
+  # ---- Visualization / notebooks / utils
+  - matplotlib
+  - seaborn
+  - plotly
+  - tqdm
+  - rich
+
+  # ---- GPU array & kernels (conda-first; respects cuda-version=12.x)
+  - cupy
+  - numba
+  - triton           # OpenAI Triton DSL (conda-forge build)
+  - pynvml
+
+  # ---- ONNX (GPU) from conda-forge (targets CUDA 12.x)
+  - onnx
+  - onnxruntime-gpu
+
+  # ---- Data loading / codecs (conda-first; you can switch DALI to pip if you need the latest)
+  - nvidia-dali-python
+  - imageio
+  - tifffile
+  - opencv
+  - nvidia-nvimgcodec
+  - nvidia-nvjpeg2k
+  - nvidia-nvtiff
+  - nvidia-nvcomp
+
+  # ---- RAPIDS (GPU DataFrame/ML/Graph) on CUDA-12
+  # If the solver resists in your current env, comment these and install RAPIDS in a sibling env.
+  - cudf=25.08
+  - cuml=25.08
+  - cugraph=25.08
+  - cuspatial=25.08
+  - dask-cudf=25.08
+  - dask-cuda
+
+  # ---- Classical ML / boosting (GPU supported when CUDA present)
+  - xgboost
+
+  # ---- Storage / connectors
+  - fsspec
+  - s3fs
+  - gcsfs
+  - datasets
+  - huggingface_hub
+
+  # ---- Experiment tracking / MLOps
+  - mlflow
+  - wandb
+  - tensorboard
+
+  # ---- Build essentials (kept minimal)
+  - cmake
+  - ninja
+  - pkg-config
+  - git
+
+  # ---- Pip-first CUDA-12 frameworks & ML/LLM tooling
+  - pip:
+      # indexes for pip installs (kept here even though variables set above,
+      # so the env file remains self-contained)
+      - --extra-index-url https://download.pytorch.org/whl/cu128
+      - --extra-index-url https://pypi.nvidia.com
+
+      # PyTorch (CUDA 12.8 wheels) – Blackwell-ready
+      - torch
+      - torchvision
+      - torchaudio
+
+      # TensorRT + TRT-LLM (CUDA 12) and Torch-TRT bridge
+      - tensorrt-cu12
+      - tensorrt-llm
+      - torch-tensorrt
+
+      # TensorFlow (GPU) – pip official path bundles its own CUDA 12 bits
+      - "tensorflow[and-cuda]"
+
+      # JAX (CUDA 12 wheels)
+      - "jax[cuda12]"
+
+      # LLM / NLP / optimization
+      - transformers
+      - tokenizers
+      - sentencepiece
+      - safetensors
+      - accelerate
+      - peft
+      - bitsandbytes
+      - optimum
+      - vllm
+
+      # CV / Diffusion
+      - diffusers
+      - controlnet-aux
+      - supervision
+
+      # Audio / Speech
+      - librosa
+      - soundfile
+      - faster-whisper
+      - ctranslate2
+
+      # ONNX extras & clients
+      - onnxscript
+      - "tritonclient[all]"
+
+      # NVIDIA model optimization toolchain
+      - nvidia-modelopt

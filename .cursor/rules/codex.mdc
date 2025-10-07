@@ -1,0 +1,16 @@
+---
+title: Codex & Env Conventions
+type: always
+globs: ["**/*"]
+---
+
+# Shell & env
+- Assume an activated micromamba env at `./.venv`. In terminals, activate with:
+  `eval "$(micromamba shell hook -s bash)" && micromamba activate -p ./.venv`.
+- Use the tasks "pytest", "lint", "format". Prefer `pytest -q`, `ruff check`, `black .`.
+- Respect `.env` (loaded via direnv); never echo secret values.
+
+# Codex usage
+- For local agent work, start in Auto approvals. Escalate to Full Access only when asked.
+- Prefer model `gpt-5-codex` for agentic coding; fall back to GPT‑5 only if requested.
+- When changes span multiple files, propose a plan, run tests, then apply diffs incrementally.
