@@ -1,0 +1,16 @@
+README.md
+pyproject.toml
+src/MinerUExperiment/__init__.py
+src/MinerUExperiment/batch_processor.py
+src/MinerUExperiment/gpu_utils.py
+src/MinerUExperiment/mineru_config.py
+src/MinerUExperiment/mineru_runner.py
+src/MinerUExperiment/validation.py
+src/MinerUExperiment/worker_coordinator.py
+src/MinerUExperiment.egg-info/PKG-INFO
+src/MinerUExperiment.egg-info/SOURCES.txt
+src/MinerUExperiment.egg-info/dependency_links.txt
+src/MinerUExperiment.egg-info/requires.txt
+src/MinerUExperiment.egg-info/top_level.txt
+tests/test_basic.py
+tests/test_validation.py

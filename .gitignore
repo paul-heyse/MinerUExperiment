@@ -6,5 +6,5 @@ __pycache__/
 .envrc.local
 .ipynb_checkpoints/
 .DS_Store
-PDFsToProcess/
-MDFilesCreated/
+PDFsToProcess/*
+MDFilesCreated/*

@@ -1,3 +1,14 @@
+Metadata-Version: 2.4
+Name: MinerUExperiment
+Version: 0.1.0
+Summary: MinerUExperiment
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+Requires-Dist: mineru[all]>=2.5.0
+Requires-Dist: torch>=2.3.0
+Requires-Dist: huggingface_hub>=0.22.2
+Requires-Dist: psutil>=5.9.0
+
 # MinerUExperiment (replace via scripts/init.sh)
 
 Baseline template for Python projects in Cursor on Ubuntu.
@@ -44,15 +55,3 @@ PY
 ```
 
 The `process_pdf` helper wraps the `mineru` CLI and enforces the `vlm-vllm-engine` backend.
-
-## Performance Profiles
-
-The batch processor exposes tuned profiles that map to the RTX 5090 + AMD 9950x hardware:
-
-- `balanced` (default) – 12 workers, GPU memory utilization at 90% for stable day-to-day runs.
-- `throughput` – 14 workers, 95% GPU utilization, aggressive batching for maximum PDFs/hour.
-- `latency` – 6 workers, conservative GPU usage to minimize per-PDF turnaround time.
-
-Invoke `scripts/process_batch.py --profile <balanced|throughput|latency>` to pick a profile, or
-`--benchmark` to emit a detailed `performance_report.json` containing throughput, GPU, CPU, and memory
-statistics collected during the run.
