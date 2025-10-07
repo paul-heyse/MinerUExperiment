@@ -26,6 +26,13 @@ def test_parse_args_defaults() -> None:
     assert args.env is None
     assert args.profile == "balanced"
     assert not args.no_progress
+    assert args.gpu_memory_throttle is None
+    assert args.gpu_memory_resume is None
+    assert args.gpu_util_throttle is None
+    assert args.gpu_util_resume is None
+    assert args.gpu_temp_throttle is None
+    assert args.gpu_temp_resume is None
+    assert args.gpu_monitor_interval is None
 
 
 def test_build_config_applies_profile_and_overrides(tmp_path: Path) -> None:
@@ -80,6 +87,13 @@ def test_build_config_applies_profile_and_overrides(tmp_path: Path) -> None:
     assert config.profile == "throughput"
     assert config.benchmark is True
     assert config.performance_report_path == output_dir / "performance_report.json"
+    assert config.gpu_pause_memory_threshold == pytest.approx(0.95)
+    assert config.gpu_resume_memory_threshold == pytest.approx(0.88)
+    assert config.gpu_pause_utilization_threshold == pytest.approx(0.99)
+    assert config.gpu_resume_utilization_threshold == pytest.approx(0.94)
+    assert config.gpu_pause_temperature_c == pytest.approx(87.0)
+    assert config.gpu_resume_temperature_c == pytest.approx(80.0)
+    assert config.gpu_monitor_interval == pytest.approx(4.0)
 
     assert config.mineru_extra_args[:2] == ("--alpha", "--beta")
     assert config.mineru_extra_args[2:] == ("--batch-mode", "aggressive")
@@ -87,6 +101,46 @@ def test_build_config_applies_profile_and_overrides(tmp_path: Path) -> None:
     assert config.env_overrides["CUSTOM"] == "VALUE"
     assert config.env_overrides["OMP_NUM_THREADS"] == "32"
     assert "PYTORCH_CUDA_ALLOC_CONF" in config.env_overrides
+
+
+def test_build_config_gpu_overrides(tmp_path: Path) -> None:
+    input_dir = tmp_path / "inputs"
+    output_dir = tmp_path / "outputs"
+    input_dir.mkdir()
+    output_dir.mkdir()
+
+    args = process_batch.parse_args(
+        [
+            "--input-dir",
+            str(input_dir),
+            "--output-dir",
+            str(output_dir),
+            "--gpu-memory-throttle",
+            "91",
+            "--gpu-memory-resume",
+            "83",
+            "--gpu-util-throttle",
+            "96",
+            "--gpu-util-resume",
+            "88",
+            "--gpu-temp-throttle",
+            "84",
+            "--gpu-temp-resume",
+            "78",
+            "--gpu-monitor-interval",
+            "3.5",
+        ]
+    )
+
+    config = process_batch.build_config(args)
+
+    assert config.gpu_pause_memory_threshold == pytest.approx(0.91)
+    assert config.gpu_resume_memory_threshold == pytest.approx(0.83)
+    assert config.gpu_pause_utilization_threshold == pytest.approx(0.96)
+    assert config.gpu_resume_utilization_threshold == pytest.approx(0.88)
+    assert config.gpu_pause_temperature_c == pytest.approx(84.0)
+    assert config.gpu_resume_temperature_c == pytest.approx(78.0)
+    assert config.gpu_monitor_interval == pytest.approx(3.5)
 
 
 def test_main_returns_failure_code_on_errors(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

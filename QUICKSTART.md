@@ -115,6 +115,23 @@ nvidia-smi dmon -s pucvmet
 cat MDFilesCreated/performance_report.json | jq
 ```
 
+### Tune GPU guardrails
+
+The batch processor pauses worker dispatch when GPU load crosses profile-specific guardrails (SM
+utilization, memory pressure, or temperature). Adjust them with flags if your cooling setup or GPU
+differs from the default RTX 5090 tuning:
+
+```bash
+python scripts/process_batch.py \
+  --profile balanced \
+  --gpu-util-throttle 95 \
+  --gpu-util-resume 88 \
+  --gpu-memory-throttle 90 \
+  --gpu-temp-throttle 82
+```
+
+Lower thresholds protect stability; higher ones squeeze throughput at the cost of additional heat.
+
 ## Expected Performance
 
 With your hardware (RTX 5090, 192GB RAM, AMD 9950x):

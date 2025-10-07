@@ -24,6 +24,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 import psutil
 
+from .gpu_utils import GPUTelemetry, sample_gpu_telemetry
 from .markdown_builder import MarkdownGenerationError, generate_structured_markdown
 from .metrics import MetricsCollector
 from .mineru_config import load_config, write_config
@@ -69,6 +70,13 @@ class BatchProcessorConfig:
     memory_resume_threshold: float = 0.70
     cpu_pause_threshold: float = 0.90
     resource_monitor_interval: float = 5.0
+    gpu_monitor_interval: float = 5.0
+    gpu_pause_memory_threshold: float = 0.92
+    gpu_resume_memory_threshold: float = 0.85
+    gpu_pause_utilization_threshold: float = 0.97
+    gpu_resume_utilization_threshold: float = 0.90
+    gpu_pause_temperature_c: Optional[float] = 85.0
+    gpu_resume_temperature_c: Optional[float] = 80.0
     profile: str = "balanced"
     max_workers: int = 14
     gpu_memory_utilization: float = 0.90
@@ -119,6 +127,35 @@ class BatchProcessorConfig:
             raise ValueError("cpu_pause_threshold must be between 0 and 1")
         if self.resource_monitor_interval <= 0:
             raise ValueError("resource_monitor_interval must be > 0")
+        if self.gpu_monitor_interval <= 0:
+            raise ValueError("gpu_monitor_interval must be > 0")
+        if not (
+            0 < self.gpu_resume_memory_threshold < self.gpu_pause_memory_threshold <= 1
+        ):
+            raise ValueError(
+                "GPU memory thresholds must satisfy 0 < resume < pause <= 1"
+            )
+        if not (
+            0 < self.gpu_resume_utilization_threshold < self.gpu_pause_utilization_threshold <= 1
+        ):
+            raise ValueError(
+                "GPU utilization thresholds must satisfy 0 < resume < pause <= 1"
+            )
+        if self.gpu_pause_temperature_c is not None:
+            if self.gpu_pause_temperature_c <= 0:
+                raise ValueError("gpu_pause_temperature_c must be positive")
+            if self.gpu_resume_temperature_c is None:
+                raise ValueError(
+                    "gpu_resume_temperature_c must be set when pause temperature is provided"
+                )
+            if self.gpu_resume_temperature_c <= 0:
+                raise ValueError("gpu_resume_temperature_c must be positive")
+            if self.gpu_resume_temperature_c >= self.gpu_pause_temperature_c:
+                raise ValueError("GPU resume temperature must be lower than pause temperature")
+        elif self.gpu_resume_temperature_c is not None:
+            raise ValueError(
+                "gpu_resume_temperature_c cannot be set without gpu_pause_temperature_c"
+            )
         if not (0.0 < self.gpu_memory_utilization <= 1.0):
             raise ValueError("gpu_memory_utilization must be between 0 and 1")
         if self.io_buffer_size < 1_048_576:
@@ -646,6 +683,11 @@ class BatchProcessor:
         self._resource_thread: Optional[threading.Thread] = None
         self._metrics: Optional[MetricsCollector] = None
         self._shared_stats = self._mp_context.Array("i", [0, 0, 0])  # processed, success, failure
+        self._resource_lock = threading.Lock()
+        self._latest_gpu_sample: Optional[GPUTelemetry] = None
+        self._gpu_warning_emitted = False
+        self._gpu_saturation_since: Optional[float] = None
+        self._gpu_below_resume_since: Optional[float] = None
 
     # ------------------------------------------------------------------
 
@@ -676,7 +718,7 @@ class BatchProcessor:
             )
             metrics = MetricsCollector(
                 output_dir=metrics_dir,
-                sample_interval=5.0,
+                sample_interval=self.config.gpu_monitor_interval,
                 gpu_index=0,
                 benchmark_mode=self.config.benchmark,
             )
@@ -693,26 +735,32 @@ class BatchProcessor:
             enabled=progress_enabled,
             leave=True,
         ) as setup_bar:
-            setup_bar.set_postfix(environment_status)
+            setup_bar.set_postfix(self._augment_postfix(environment_status))
             setup_bar.update()
 
             self._validate_resources()
-            setup_bar.set_postfix({**environment_status, "resources": "ok"})
+            setup_bar.set_postfix(
+                self._augment_postfix({**environment_status, "resources": "ok"})
+            )
             setup_bar.update()
 
             self._configure_mineru()
             environment_status = {**environment_status, "dtype": self.config.dtype}
-            setup_bar.set_postfix(environment_status)
+            setup_bar.set_postfix(self._augment_postfix(environment_status))
             setup_bar.update()
 
             self._start_time = time.perf_counter()
             self._install_signal_handlers()
-            setup_bar.set_postfix({**environment_status, "signals": "ready"})
+            setup_bar.set_postfix(
+                self._augment_postfix({**environment_status, "signals": "ready"})
+            )
             setup_bar.update()
 
             self._start_workers()
             self._start_resource_monitor()
-            setup_bar.set_postfix({**environment_status, "workers": str(self.config.workers)})
+            setup_bar.set_postfix(
+                self._augment_postfix({**environment_status, "workers": str(self.config.workers)})
+            )
             setup_bar.update()
 
         processed = succeeded = failed = skipped = 0
@@ -736,15 +784,17 @@ class BatchProcessor:
                 position=0,
             ) as overall_bar:
                 overall_bar.set_postfix(
-                    {
-                        "success": succeeded,
-                        "failed": failed,
-                        "remaining": total_jobs,
-                        "cuda": environment_status.get("cuda", "n/a"),
-                        "vllm": environment_status.get("backend", self.config.mineru_backend),
-                        "vllm_mod": environment_status.get("vllm_module", "unknown"),
-                        "cli": environment_status.get("cli", "not found"),
-                    }
+                    self._augment_postfix(
+                        {
+                            "success": succeeded,
+                            "failed": failed,
+                            "remaining": total_jobs,
+                            "cuda": environment_status.get("cuda", "n/a"),
+                            "vllm": environment_status.get("backend", self.config.mineru_backend),
+                            "vllm_mod": environment_status.get("vllm_module", "unknown"),
+                            "cli": environment_status.get("cli", "not found"),
+                        }
+                    )
                 )
 
                 while self._any_worker_alive():
@@ -829,19 +879,21 @@ class BatchProcessor:
                                 overall_bar.update(1)
                                 remaining = max(total_jobs - processed, 0)
                                 overall_bar.set_postfix(
-                                    {
-                                        "success": succeeded,
-                                        "failed": failed,
-                                        "remaining": remaining,
-                                        "cuda": environment_status.get("cuda", "n/a"),
-                                        "vllm": environment_status.get(
-                                            "backend", self.config.mineru_backend
-                                        ),
-                                        "vllm_mod": environment_status.get(
-                                            "vllm_module", "unknown"
-                                        ),
-                                        "cli": environment_status.get("cli", "not found"),
-                                    }
+                                    self._augment_postfix(
+                                        {
+                                            "success": succeeded,
+                                            "failed": failed,
+                                            "remaining": remaining,
+                                            "cuda": environment_status.get("cuda", "n/a"),
+                                            "vllm": environment_status.get(
+                                                "backend", self.config.mineru_backend
+                                            ),
+                                            "vllm_mod": environment_status.get(
+                                                "vllm_module", "unknown"
+                                            ),
+                                            "cli": environment_status.get("cli", "not found"),
+                                        }
+                                    )
                                 )
                             continue
 
@@ -859,19 +911,21 @@ class BatchProcessor:
                                 overall_bar.update(1)
                                 remaining = max(total_jobs - processed, 0)
                                 overall_bar.set_postfix(
-                                    {
-                                        "success": succeeded,
-                                        "failed": failed,
-                                        "remaining": remaining,
-                                        "cuda": environment_status.get("cuda", "n/a"),
-                                        "vllm": environment_status.get(
-                                            "backend", self.config.mineru_backend
-                                        ),
-                                        "vllm_mod": environment_status.get(
-                                            "vllm_module", "unknown"
-                                        ),
-                                        "cli": environment_status.get("cli", "not found"),
-                                    }
+                                    self._augment_postfix(
+                                        {
+                                            "success": succeeded,
+                                            "failed": failed,
+                                            "remaining": remaining,
+                                            "cuda": environment_status.get("cuda", "n/a"),
+                                            "vllm": environment_status.get(
+                                                "backend", self.config.mineru_backend
+                                            ),
+                                            "vllm_mod": environment_status.get(
+                                                "vllm_module", "unknown"
+                                            ),
+                                            "cli": environment_status.get("cli", "not found"),
+                                        }
+                                    )
                                 )
                             continue
 
@@ -1184,35 +1238,149 @@ class BatchProcessor:
         self._resource_thread.join(timeout=2)
         self._resource_thread = None
 
+    def _current_gpu_snapshot(self) -> Optional[GPUTelemetry]:
+        with self._resource_lock:
+            return self._latest_gpu_sample
+
+    def _augment_postfix(self, base: Dict[str, object]) -> Dict[str, object]:
+        postfix = dict(base)
+        sample = self._current_gpu_snapshot()
+        if sample is not None:
+            postfix["gpu"] = f"{sample.utilization_percent:.0f}%"
+            postfix["gpu_mem"] = f"{sample.memory_percent:.0f}%"
+            if sample.temperature_c is not None:
+                postfix["gpu_temp"] = f"{sample.temperature_c:.0f}C"
+        elif self._gpu_warning_emitted:
+            postfix.setdefault("gpu", "n/a")
+        if self._throttle_event.is_set():
+            postfix["throttle"] = "on"
+        return postfix
+
     def _resource_monitor_loop(self) -> None:
+        next_gpu_sample = 0.0
+        sample_interval = min(self.config.resource_monitor_interval, self.config.gpu_monitor_interval)
+
         while not self._shutdown_event.is_set():
+            now = time.time()
             mem = psutil.virtual_memory()
             cpu = psutil.cpu_percent(interval=None)
 
-            if (
-                mem.percent / 100 >= self.config.memory_pause_threshold
-                or cpu / 100 >= self.config.cpu_pause_threshold
-            ):
-                if not self._throttle_event.is_set():
-                    LOGGER.warning(
-                        "Resource saturation detected (mem=%.1f%% cpu=%.1f%%); throttling",
-                        mem.percent,
-                        cpu,
-                    )
-                self._throttle_event.set()
-            elif (
-                self._throttle_event.is_set()
-                and mem.percent / 100 <= self.config.memory_resume_threshold
-                and cpu / 100 <= self.config.cpu_pause_threshold * 0.85
-            ):
-                LOGGER.info(
-                    "Resources recovered (mem=%.1f%% cpu=%.1f%%); resuming",
-                    mem.percent,
-                    cpu,
-                )
-                self._throttle_event.clear()
+            latest_sample = self._current_gpu_snapshot()
+            telemetry: Optional[GPUTelemetry]
 
-            time.sleep(self.config.resource_monitor_interval)
+            if now >= next_gpu_sample:
+                telemetry = sample_gpu_telemetry()
+                next_gpu_sample = now + self.config.gpu_monitor_interval
+                if telemetry is None:
+                    if latest_sample is not None:
+                        with self._resource_lock:
+                            self._latest_gpu_sample = None
+                        latest_sample = None
+                    if latest_sample is None and not self._gpu_warning_emitted:
+                        LOGGER.warning(
+                            "GPU telemetry unavailable; GPU guardrails disabled for this run."
+                        )
+                        self._gpu_warning_emitted = True
+                    if latest_sample is None:
+                        self._gpu_saturation_since = None
+                        if self._gpu_below_resume_since is None:
+                            self._gpu_below_resume_since = now
+                else:
+                    with self._resource_lock:
+                        self._latest_gpu_sample = telemetry
+                    latest_sample = telemetry
+            else:
+                telemetry = None
+
+            throttle_reasons: List[str] = []
+            cpu_ratio = cpu / 100.0
+            mem_ratio = mem.percent / 100.0
+
+            if mem_ratio >= self.config.memory_pause_threshold:
+                throttle_reasons.append(
+                    f"mem={mem.percent:.1f}%>={self.config.memory_pause_threshold * 100:.0f}%"
+                )
+            if cpu_ratio >= self.config.cpu_pause_threshold:
+                throttle_reasons.append(
+                    f"cpu={cpu:.1f}%>={self.config.cpu_pause_threshold * 100:.0f}%"
+                )
+
+            gpu_over_pause = False
+            gpu_info = None
+            if latest_sample is not None:
+                util_ratio = latest_sample.utilization_percent / 100.0
+                mem_percent_ratio = latest_sample.memory_percent / 100.0
+                temperature = latest_sample.temperature_c
+                gpu_info = (
+                    f"gpu util={latest_sample.utilization_percent:.0f}% "
+                    f"mem={latest_sample.memory_percent:.0f}%"
+                )
+                if temperature is not None:
+                    gpu_info += f" temp={temperature:.0f}C"
+
+                if util_ratio >= self.config.gpu_pause_utilization_threshold or mem_percent_ratio >= self.config.gpu_pause_memory_threshold:
+                    gpu_over_pause = True
+                if (
+                    self.config.gpu_pause_temperature_c is not None
+                    and temperature is not None
+                    and temperature >= self.config.gpu_pause_temperature_c
+                ):
+                    gpu_over_pause = True
+
+                if gpu_over_pause:
+                    throttle_reasons.append(gpu_info)
+                    self._gpu_saturation_since = now
+                    self._gpu_below_resume_since = None
+                else:
+                    within_resume = (
+                        util_ratio <= self.config.gpu_resume_utilization_threshold
+                        and mem_percent_ratio <= self.config.gpu_resume_memory_threshold
+                        and (
+                            self.config.gpu_resume_temperature_c is None
+                            or temperature is None
+                            or temperature <= self.config.gpu_resume_temperature_c
+                        )
+                    )
+                    if within_resume:
+                        if self._gpu_below_resume_since is None:
+                            self._gpu_below_resume_since = now
+                    else:
+                        self._gpu_below_resume_since = None
+            else:
+                if self._gpu_saturation_since is not None:
+                    self._gpu_saturation_since = None
+                if self._gpu_below_resume_since is None:
+                    self._gpu_below_resume_since = now
+
+            if throttle_reasons:
+                message = "; ".join(throttle_reasons)
+                if gpu_info and gpu_info not in throttle_reasons:
+                    message = f"{message}; {gpu_info}"
+                if not self._throttle_event.is_set():
+                    LOGGER.warning("Resource saturation detected (%s); throttling", message)
+                self._throttle_event.set()
+            else:
+                can_resume = (
+                    self._throttle_event.is_set()
+                    and mem_ratio <= self.config.memory_resume_threshold
+                    and cpu_ratio <= self.config.cpu_pause_threshold * 0.85
+                )
+
+                gpu_ready = True
+                if self._gpu_saturation_since is not None:
+                    gpu_ready = False
+                    if self._gpu_below_resume_since is not None and now - self._gpu_below_resume_since >= self.config.gpu_monitor_interval:
+                        gpu_ready = True
+                        self._gpu_saturation_since = None
+
+                if can_resume and gpu_ready:
+                    detail = f"mem={mem.percent:.1f}% cpu={cpu:.1f}%"
+                    if gpu_info:
+                        detail = f"{detail} {gpu_info}"
+                    LOGGER.info("Resources recovered (%s); resuming", detail)
+                    self._throttle_event.clear()
+
+            time.sleep(sample_interval)
 
 
 __all__ = [

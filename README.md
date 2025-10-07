@@ -49,13 +49,19 @@ The `process_pdf` helper wraps the `mineru` CLI and enforces the `vlm-vllm-engin
 
 The batch processor exposes tuned profiles that map to the RTX 5090 + AMD 9950x hardware:
 
-- `balanced` (default) – 12 workers, GPU memory utilization at 90% for stable day-to-day runs.
-- `throughput` – 14 workers, 95% GPU utilization, aggressive batching for maximum PDFs/hour.
-- `latency` – 6 workers, conservative GPU usage to minimize per-PDF turnaround time.
+- `balanced` (default) – 12 workers, GPU memory utilization at 90% for stable day-to-day runs. GPU guardrails throttle at 97% SM / 92% memory / 85 °C and resume at 90% / 85% / 80 °C.
+- `throughput` – 14 workers, 95% GPU utilization, aggressive batching for maximum PDFs/hour. Guardrails pause at 99% SM / 95% memory / 87 °C to keep the RTX 5090 stable under full load.
+- `latency` – 6 workers, conservative GPU usage to minimize per-PDF turnaround time with lower guardrail thresholds (95% SM / 88% memory / 83 °C).
 
 Invoke `scripts/process_batch.py --profile <balanced|throughput|latency>` to pick a profile, or
 `--benchmark` to emit a detailed `performance_report.json` containing throughput, GPU, CPU, and memory
 statistics collected during the run.
+
+You can override the GPU guardrails per run with flags such as `--gpu-memory-throttle`,
+`--gpu-memory-resume`, `--gpu-util-throttle`, `--gpu-util-resume`, `--gpu-temp-throttle`,
+`--gpu-temp-resume`, and `--gpu-monitor-interval`. Pass percentages (e.g. `--gpu-memory-throttle 90`)
+or degrees Celsius for the temperature guardrails. Use these when experimenting with alternative GPUs
+or cooling configurations.
 
 To compare multiple benchmark runs, load the generated reports with
 `MinerUExperiment.metrics.compare_reports([...])` or run the helper via a short Python snippet to write a
