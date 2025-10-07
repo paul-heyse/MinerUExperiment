@@ -5,7 +5,7 @@ import sys
 import threading
 import time
 from pathlib import Path
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 
 import pytest
 
@@ -101,7 +101,7 @@ def test_batch_processor_processes_pdfs_without_duplicates(
         retry_delay=0.05,
         progress_interval=0.2,
         mineru_cli=str(fake_mineru),
-        mineru_backend="test-backend",
+        mineru_backend="pipeline",
         mineru_extra_args=tuple(),
         env_overrides={},
         log_progress=False,
@@ -121,6 +121,8 @@ def test_batch_processor_processes_pdfs_without_duplicates(
     assert summary.processed == total_pdfs
     assert summary.succeeded == len(success_pdfs)
     assert summary.failed == len(failure_pdfs)
+    assert summary.skipped == 0
+    assert summary.duration_seconds > 0.0
 
     for pdf in success_pdfs:
         assert done_path_for(pdf).exists()
@@ -181,7 +183,7 @@ def test_batch_processor_graceful_shutdown(tmp_path: Path, fake_mineru: Path) ->
         retry_delay=0.05,
         progress_interval=0.2,
         mineru_cli=str(fake_mineru),
-        mineru_backend="test-backend",
+        mineru_backend="pipeline",
         mineru_extra_args=tuple(),
         env_overrides={},
         log_progress=False,
@@ -218,6 +220,8 @@ def test_batch_processor_graceful_shutdown(tmp_path: Path, fake_mineru: Path) ->
     assert summary.failed == 0
     assert summary.failures == []
     assert summary.failure_report is None
+    assert summary.skipped == 0
+    assert summary.duration_seconds > 0.0
     assert not (output_dir / "failed_documents.json").exists()
 
     processed_pdfs = [pdf for pdf in pdfs if done_path_for(pdf).exists()]
@@ -244,7 +248,8 @@ def _stub_dependency_imports(
     monkeypatch: pytest.MonkeyPatch, *, missing: set[str] | None = None
 ) -> None:
     missing = missing or set()
-    for name in {"torch", "vllm"}:
+    modules_to_manage = {"torch"} | set(missing)
+    for name in modules_to_manage:
         if name in missing:
             monkeypatch.delitem(sys.modules, name, raising=False)
 
@@ -253,7 +258,7 @@ def _stub_dependency_imports(
     module_cache: dict[str, ModuleType] = {}
 
     def _fake_import(name: str, package: str | None = None):
-        if name in {"torch", "vllm"}:
+        if name in modules_to_manage:
             if name in missing:
                 raise ModuleNotFoundError(name)
             if name not in module_cache:
@@ -270,6 +275,8 @@ def _stub_dependency_imports(
     def _fake_find_spec(name: str, package: str | None = None):
         if name in missing:
             return None
+        if name in modules_to_manage:
+            return SimpleNamespace(name=name)  # type: ignore[return-value]
         return original_find_spec(name, package)  # type: ignore[arg-type]
 
     monkeypatch.setattr(importlib, "import_module", _fake_import)
@@ -296,7 +303,7 @@ def test_batch_processor_missing_cli_aborts(
         retry_delay=0.05,
         progress_interval=0.2,
         mineru_cli="/not/a/real/mineru",
-        mineru_backend="test-backend",
+        mineru_backend="pipeline",
         mineru_extra_args=tuple(),
         env_overrides={},
         log_progress=False,
@@ -336,7 +343,7 @@ def test_batch_processor_missing_dependency_aborts(
         retry_delay=0.05,
         progress_interval=0.2,
         mineru_cli=str(fake_mineru),
-        mineru_backend="test-backend",
+        mineru_backend="pipeline",
         mineru_extra_args=tuple(),
         env_overrides={},
         log_progress=False,

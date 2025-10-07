@@ -237,7 +237,7 @@ The system automatically creates `~/mineru.json` with optimal settings:
 ```json
 {
   "backend": {
-    "name": "vlm-vllm-engine",
+    "name": "pipeline",
     "vllm": {
       "gpu_memory_utilization": 0.9,
       "tensor_parallel_size": 1,
@@ -267,7 +267,7 @@ The system automatically creates `~/mineru.json` with optimal settings:
 
 ```bash
 # Process a single PDF directly with MinerU CLI
-mineru -p PDFsToProcess/document.pdf -o MDFilesCreated -b vlm-vllm-engine
+mineru -p PDFsToProcess/document.pdf -o MDFilesCreated
 
 # Or use the Python API
 python -c "
@@ -356,7 +356,7 @@ python scripts/process_batch.py [OPTIONS]
 
 **MinerU Settings:**
 
-- `--mineru-backend BACKEND` - MinerU backend (default: `vlm-vllm-engine`)
+- `--mineru-backend BACKEND` - MinerU backend (default: `pipeline`)
 - `--mineru-cli PATH` - Path to mineru executable (default: `mineru`)
 - `--mineru-extra-args ARGS` - Additional arguments passed to mineru
 
@@ -655,7 +655,7 @@ class BatchProcessorConfig:
     max_retries: int = 3         # Max retry attempts
     retry_delay: float = 10.0    # Delay between retries (seconds)
     stale_lock_timeout: float = 1800.0  # 30 minutes
-    mineru_backend: str = "vlm-vllm-engine"
+    mineru_backend: str = "pipeline"
     mineru_cli: str = "mineru"
     mineru_extra_args: List[str] = field(default_factory=list)
     env_overrides: Dict[str, str] = field(default_factory=dict)

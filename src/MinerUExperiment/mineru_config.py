@@ -66,7 +66,7 @@ class MineruConfig:
     model_source: str = field(
         default_factory=lambda: os.environ.get("MINERU_MODEL_SOURCE", "huggingface")
     )
-    backend_name: str = "vlm-vllm-engine"
+    backend_name: str = "pipeline"
     device: str = "cuda:0"
     cuda_visible_devices: str = "0"
     vllm_settings: VLLMSettings = field(default_factory=VLLMSettings)
@@ -164,7 +164,7 @@ def load_config(path: Optional[Path] = None) -> MineruConfig:
     config = MineruConfig(
         model_path=model_path,
         model_source=str(model_section.get("source", default_source)),
-        backend_name=str(backend_section.get("name", "vlm-vllm-engine")),
+        backend_name=str(backend_section.get("name", "pipeline")),
         device=str(runtime_section.get("device", "cuda:0")),
         cuda_visible_devices=str(runtime_section.get("cuda_visible_devices", "0")),
         vllm_settings=VLLMSettings.from_dict(vllm_mapping),

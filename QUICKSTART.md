@@ -49,7 +49,7 @@ mkdir -p PDFsToProcess MDFilesCreated
 
 # Test with a single PDF (replace with your PDF)
 export CUDA_VISIBLE_DEVICES=0
-mineru -p PDFsToProcess/test.pdf -o MDFilesCreated -b vlm-vllm-engine
+mineru -p PDFsToProcess/test.pdf -o MDFilesCreated
 
 # Check outputs
 ls -lh MDFilesCreated/

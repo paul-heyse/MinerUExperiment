@@ -87,11 +87,26 @@ The tool writes model paths into `~/mineru.json` automatically after downloads. 
 
 ---
 
-## 5) Two ways to run MinerU with vLLM
+## 5) Run MinerU (Pipeline default, vLLM optional)
 
-### Option A — **Embedded vLLM engine inside MinerU** (simplest)
+### Option A — **Pipeline backend (default)**
 
-This runs vLLM inside the MinerU process. If you have multiple GPUs, you can pass through vLLM parameters such as `--data-parallel-size`.
+This is the recommended path. The CLI uses the pipeline engine automatically, so you usually only need to
+point it at your PDFs and output directory. Pipeline-specific behaviour (device mode, VRAM caps, formula/table
+toggles) can be controlled with environment variables such as `MINERU_DEVICE_MODE` and `MINERU_VIRTUAL_VRAM_SIZE`.
+
+```bash
+# Use only GPU 0 (optional)
+CUDA_VISIBLE_DEVICES=0 \
+mineru \
+  -p /data/pdfs \
+  -o /data/out
+```
+
+### Option B — **Embedded vLLM engine inside MinerU**
+
+If you explicitly need the vLLM backend, supply `-b vlm-vllm-engine` and pass through vLLM parameters such
+as `--data-parallel-size`.
 
 ```bash
 # Use only GPU 0 (optional)
@@ -105,7 +120,7 @@ mineru \
 
 MinerU forwards **official vLLM flags** to its commands (`mineru`, `mineru-gradio`, `mineru-api`, `mineru-vllm-server`). For multi‑GPU speedups: `--data-parallel-size N`. To select GPUs, use `CUDA_VISIBLE_DEVICES`. ([opendatalab.github.io][8])
 
-### Option B — **Decoupled vLLM HTTP server** + MinerU HTTP client (scales well)
+### Option C — **Decoupled vLLM HTTP server** + MinerU HTTP client (scales well)
 
 1. Serve the **MinerU2.5-2509-1.2B** model directly via vLLM:
 

@@ -138,8 +138,8 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
     )
     parser.add_argument(
         "--backend",
-        default="vlm-vllm-engine",
-        help="MinerU backend to use",
+        default="pipeline",
+        help="MinerU backend to use (default: pipeline)",
     )
     parser.add_argument(
         "--mineru-cli",
@@ -260,6 +260,12 @@ def build_config(args: argparse.Namespace) -> BatchProcessorConfig:
         "mineru_extra_args": extra_args,
         "env_overrides": env_overrides,
         "log_progress": not args.no_progress,
+        "mineru_model_source": os.environ.get("MINERU_MODEL_SOURCE", "huggingface"),
+        "mineru_device_mode": os.environ.get("MINERU_DEVICE_MODE", "cuda"),
+        "mineru_virtual_vram_limit_gb": None,
+        "mineru_formulas_enabled": True,
+        "mineru_tables_enabled": True,
+        "mineru_tools_config_json": None,
         "memory_pause_threshold": 0.80,
         "memory_resume_threshold": 0.70,
         "cpu_pause_threshold": 0.90,
@@ -291,6 +297,11 @@ def build_config(args: argparse.Namespace) -> BatchProcessorConfig:
         profile=profile,
         workers_override=args.workers,
     )
+
+    if config_values.get("mineru_virtual_vram_limit_gb") is None:
+        worker_limit = config_values.get("worker_memory_limit_gb")
+        if isinstance(worker_limit, (int, float)):
+            config_values["mineru_virtual_vram_limit_gb"] = float(worker_limit)
 
     if args.gpu_memory_throttle is not None:
         config_values["gpu_pause_memory_threshold"] = args.gpu_memory_throttle / 100.0

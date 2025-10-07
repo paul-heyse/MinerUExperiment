@@ -44,11 +44,11 @@
       └───────┴───────┴───────┴───────┘
                       │
                       ▼
-         ┌────────────────────────┐
-         │  MinerU + vLLM Engine  │
-         │  (GPU-accelerated)     │ ◄─── MinerU2.5-2509-1.2B model
-         └────────────────────────┘      vlm-vllm-engine backend
-                      │                   GPU warmup routine
+        ┌────────────────────────┐
+        │  MinerU Pipeline       │
+        │  (GPU-accelerated)     │ ◄─── MinerU2.5-2509-1.2B model
+        └────────────────────────┘      pipeline backend
+                     │                   GPU warmup routine
                       ▼
          ┌────────────────────────┐
          │  MinerU Output         │
@@ -199,4 +199,3 @@ Documentation:
   • openspec/project.md      - Project conventions and tech stack
   • openspec/AGENTS.md       - OpenSpec workflow guidance
 ```
-

@@ -123,7 +123,7 @@ def process_pdf(
     show_progress: bool = True,
 ) -> MineruProcessResult:
     """
-    Invoke the MinerU CLI against a single PDF using the vLLM backend.
+    Invoke the MinerU CLI against a single PDF using the configured MinerU backend.
 
     Parameters
     ----------
@@ -200,6 +200,8 @@ def process_pdf(
         if active_config.model_path:
             env.setdefault("MINERU_MODEL_PATH", str(active_config.model_path))
         env.setdefault("MINERU_MODEL_SOURCE", active_config.model_source)
+        if active_config.backend_name == "pipeline":
+            env.setdefault("MINERU_DEVICE_MODE", active_config.device)
         if extra_env:
             env.update(extra_env)
 

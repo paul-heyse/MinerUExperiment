@@ -31,7 +31,7 @@ def test_load_and_write_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     monkeypatch.setattr(mineru_config, "CONFIG_PATH", config_path, raising=False)
 
     config = load_config()
-    assert config.backend_name == "vlm-vllm-engine"
+    assert config.backend_name == "pipeline"
 
     config.set_visible_devices([0])
     config.update_vllm_settings(data_parallel_size=2)

@@ -8,6 +8,7 @@ import logging
 import multiprocessing as mp
 import os
 import queue
+import math
 try:  # pragma: no cover - resource is Unix specific
     import resource
 except ImportError:  # pragma: no cover
@@ -26,7 +27,12 @@ from datetime import datetime, timezone
 
 import psutil
 
-from .gpu_utils import GPUTelemetry, sample_gpu_telemetry
+from .gpu_utils import (
+    GPUTelemetry,
+    GPUUnavailableError,
+    sample_gpu_telemetry,
+    warmup_gpu,
+)
 from .markdown_builder import MarkdownGenerationError, generate_structured_markdown
 from .metrics import MetricsCollector
 from .mineru_config import load_config, write_config
@@ -70,6 +76,12 @@ class BatchProcessorConfig:
     mineru_extra_args: Sequence[str] = field(default_factory=tuple)
     env_overrides: Dict[str, str] = field(default_factory=dict)
     log_progress: bool = True
+    mineru_model_source: str = "huggingface"
+    mineru_device_mode: str = "cuda"
+    mineru_virtual_vram_limit_gb: Optional[float] = None
+    mineru_formulas_enabled: bool = True
+    mineru_tables_enabled: bool = True
+    mineru_tools_config_json: Optional[Path] = None
     memory_pause_threshold: float = 0.80
     memory_resume_threshold: float = 0.70
     cpu_pause_threshold: float = 0.90
@@ -109,6 +121,9 @@ class BatchProcessorConfig:
         if self.performance_report_path is not None:
             report_path = Path(self.performance_report_path).expanduser().resolve()
             object.__setattr__(self, "performance_report_path", report_path)
+        if self.mineru_tools_config_json is not None:
+            config_path = Path(self.mineru_tools_config_json).expanduser().resolve()
+            object.__setattr__(self, "mineru_tools_config_json", config_path)
 
         if not input_dir.exists():
             raise FileNotFoundError(f"Input directory does not exist: {input_dir}")
@@ -168,6 +183,15 @@ class BatchProcessorConfig:
             raise ValueError("worker_memory_limit_gb must be positive")
         if self.reserved_system_cores < 0:
             raise ValueError("reserved_system_cores must be >= 0")
+        if self.mineru_virtual_vram_limit_gb is not None and self.mineru_virtual_vram_limit_gb <= 0:
+            raise ValueError("mineru_virtual_vram_limit_gb must be positive when set")
+        allowed_sources = {"huggingface", "modelscope", "local"}
+        if self.mineru_model_source not in allowed_sources:
+            raise ValueError(
+                f"mineru_model_source must be one of {', '.join(sorted(allowed_sources))}"
+            )
+        if not self.mineru_device_mode:
+            raise ValueError("mineru_device_mode cannot be empty")
 
 
 def _load_optional_module(name: str):
@@ -190,7 +214,12 @@ def _environment_snapshot(config: BatchProcessorConfig) -> Dict[str, str]:
     else:
         status["cuda"] = "unavailable"
 
-    status["vllm_module"] = "available" if importlib.util.find_spec("vllm") else "missing"
+    if "vllm" in config.mineru_backend:
+        status["vllm_module"] = "available" if importlib.util.find_spec("vllm") else "missing"
+    elif config.mineru_backend == "pipeline":
+        status["device_mode"] = config.mineru_device_mode
+        status["model_source"] = config.mineru_model_source
+
     cli_path = shutil.which(config.mineru_cli)
     status["cli"] = cli_path or "not found"
     return status
@@ -219,6 +248,26 @@ def _relative_to(path: Path, parent: Path) -> Path:
         ) from exc
 
 
+VLLM_ENV_KEYS = (
+    "MINERU_VLLM_GPU_MEMORY_UTILIZATION",
+    "MINERU_VLLM_TENSOR_PARALLEL_SIZE",
+    "MINERU_VLLM_DATA_PARALLEL_SIZE",
+    "MINERU_VLLM_MAX_MODEL_LEN",
+    "MINERU_VLLM_BLOCK_SIZE",
+    "MINERU_VLLM_SWAP_SPACE_MB",
+    "MINERU_VLLM_DTYPE",
+)
+
+PIPELINE_ENV_KEYS = (
+    "MINERU_DEVICE_MODE",
+    "MINERU_VIRTUAL_VRAM_SIZE",
+    "MINERU_MODEL_SOURCE",
+    "MINERU_FORMULA_ENABLE",
+    "MINERU_TABLE_ENABLE",
+    "MINERU_TOOLS_CONFIG_JSON",
+)
+
+
 def _worker_env(config: BatchProcessorConfig) -> Dict[str, str]:
     env = os.environ.copy()
     env.update(config.env_overrides)
@@ -226,6 +275,8 @@ def _worker_env(config: BatchProcessorConfig) -> Dict[str, str]:
     env.setdefault("MKL_NUM_THREADS", str(config.mkl_threads))
 
     if "vllm" in config.mineru_backend:
+        for key in PIPELINE_ENV_KEYS:
+            env.pop(key, None)
         env.setdefault("MINERU_VLLM_GPU_MEMORY_UTILIZATION", f"{config.gpu_memory_utilization:.2f}")
         env.setdefault("MINERU_VLLM_TENSOR_PARALLEL_SIZE", str(config.tensor_parallel_size))
         env.setdefault("MINERU_VLLM_DATA_PARALLEL_SIZE", str(config.data_parallel_size))
@@ -233,16 +284,26 @@ def _worker_env(config: BatchProcessorConfig) -> Dict[str, str]:
         env.setdefault("MINERU_VLLM_BLOCK_SIZE", str(config.block_size))
         env.setdefault("MINERU_VLLM_SWAP_SPACE_MB", str(config.swap_space_mb))
         env.setdefault("MINERU_VLLM_DTYPE", config.dtype)
+    elif config.mineru_backend == "pipeline":
+        for key in VLLM_ENV_KEYS:
+            env.pop(key, None)
+        env.setdefault("MINERU_DEVICE_MODE", config.mineru_device_mode)
+        vram_limit = (
+            config.mineru_virtual_vram_limit_gb
+            if config.mineru_virtual_vram_limit_gb is not None
+            else config.worker_memory_limit_gb
+        )
+        if vram_limit:
+            env.setdefault("MINERU_VIRTUAL_VRAM_SIZE", str(int(math.ceil(vram_limit))))
+        env.setdefault("MINERU_MODEL_SOURCE", config.mineru_model_source)
+        env.setdefault("MINERU_FORMULA_ENABLE", "true" if config.mineru_formulas_enabled else "false")
+        env.setdefault("MINERU_TABLE_ENABLE", "true" if config.mineru_tables_enabled else "false")
+        if config.mineru_tools_config_json is not None:
+            env.setdefault("MINERU_TOOLS_CONFIG_JSON", str(config.mineru_tools_config_json))
+        else:
+            env.pop("MINERU_TOOLS_CONFIG_JSON", None)
     else:
-        for key in (
-            "MINERU_VLLM_GPU_MEMORY_UTILIZATION",
-            "MINERU_VLLM_TENSOR_PARALLEL_SIZE",
-            "MINERU_VLLM_DATA_PARALLEL_SIZE",
-            "MINERU_VLLM_MAX_MODEL_LEN",
-            "MINERU_VLLM_BLOCK_SIZE",
-            "MINERU_VLLM_SWAP_SPACE_MB",
-            "MINERU_VLLM_DTYPE",
-        ):
+        for key in VLLM_ENV_KEYS + PIPELINE_ENV_KEYS:
             env.pop(key, None)
 
     return env
@@ -454,6 +515,11 @@ def _process_pdf_once(
 
     written, artifacts = _move_outputs(temp_dir=temp_dir, pdf_path=pdf_path, config=config)
 
+    if not written:
+        raise BatchProcessorError(
+            f"MinerU did not produce any JSON or Markdown outputs for {pdf_path.name}"
+        )
+
     shutil.rmtree(temp_dir, ignore_errors=True)
     return written, artifacts
 
@@ -638,6 +704,22 @@ def _config_from_dict(config_dict: Dict[str, object]) -> BatchProcessorConfig:
     mineru_extra_args = tuple(config_dict["mineru_extra_args"])  # type: ignore[arg-type]
     env_overrides = dict(config_dict["env_overrides"])  # type: ignore[arg-type]
     log_progress = bool(config_dict["log_progress"])  # type: ignore[arg-type]
+    mineru_model_source = str(config_dict.get("mineru_model_source", "huggingface"))
+    mineru_device_mode = str(config_dict.get("mineru_device_mode", "cuda"))
+    mineru_virtual_vram_limit_gb_raw = config_dict.get("mineru_virtual_vram_limit_gb")
+    mineru_virtual_vram_limit_gb = (
+        float(mineru_virtual_vram_limit_gb_raw)
+        if mineru_virtual_vram_limit_gb_raw is not None
+        else None
+    )
+    mineru_formulas_enabled = bool(config_dict.get("mineru_formulas_enabled", True))
+    mineru_tables_enabled = bool(config_dict.get("mineru_tables_enabled", True))
+    mineru_tools_config_json_raw = config_dict.get("mineru_tools_config_json")
+    mineru_tools_config_json = (
+        Path(mineru_tools_config_json_raw)
+        if mineru_tools_config_json_raw
+        else None
+    )
     memory_pause_threshold = float(config_dict.get("memory_pause_threshold", 0.80))
     memory_resume_threshold = float(config_dict.get("memory_resume_threshold", 0.70))
     cpu_pause_threshold = float(config_dict.get("cpu_pause_threshold", 0.90))
@@ -679,6 +761,12 @@ def _config_from_dict(config_dict: Dict[str, object]) -> BatchProcessorConfig:
         mineru_extra_args=mineru_extra_args,
         env_overrides=env_overrides,
         log_progress=log_progress,
+        mineru_model_source=mineru_model_source,
+        mineru_device_mode=mineru_device_mode,
+        mineru_virtual_vram_limit_gb=mineru_virtual_vram_limit_gb,
+        mineru_formulas_enabled=mineru_formulas_enabled,
+        mineru_tables_enabled=mineru_tables_enabled,
+        mineru_tools_config_json=mineru_tools_config_json,
         memory_pause_threshold=memory_pause_threshold,
         memory_resume_threshold=memory_resume_threshold,
         cpu_pause_threshold=cpu_pause_threshold,
@@ -763,7 +851,7 @@ class BatchProcessor:
         progress_enabled = self.config.log_progress and total_jobs > 0
 
         with ProgressBar(
-            total=6,
+            total=7,
             desc="Setup",
             unit="step",
             enabled=progress_enabled,
@@ -786,6 +874,12 @@ class BatchProcessor:
             self._configure_mineru()
             environment_status = {**environment_status, "dtype": self.config.dtype}
             setup_bar.set_postfix(self._augment_postfix(environment_status))
+            setup_bar.update()
+
+            self._warmup_cuda()
+            setup_bar.set_postfix(
+                self._augment_postfix({**environment_status, "warmup": "ok"})
+            )
             setup_bar.update()
 
             self._start_time = time.perf_counter()
@@ -841,6 +935,23 @@ class BatchProcessor:
                 except Exception:  # pragma: no cover - fallback path handling
                     return pdf_path.name or str(pdf_path)
 
+        def progress_snapshot(remaining_count: int) -> Dict[str, object]:
+            snapshot: Dict[str, object] = {
+                "success": succeeded,
+                "failed": failed,
+                "remaining": remaining_count,
+                "cuda": environment_status.get("cuda", "n/a"),
+                "backend": environment_status.get("backend", self.config.mineru_backend),
+                "cli": environment_status.get("cli", "not found"),
+            }
+            if "model_source" in environment_status:
+                snapshot["source"] = environment_status["model_source"]
+            if "device_mode" in environment_status:
+                snapshot["device"] = environment_status["device_mode"]
+            if "vllm_module" in environment_status:
+                snapshot["vllm_mod"] = environment_status["vllm_module"]
+            return snapshot
+
         try:
             with ProgressBar(
                 total=total_jobs,
@@ -850,19 +961,7 @@ class BatchProcessor:
                 leave=True,
                 position=0,
             ) as overall_bar:
-                overall_bar.set_postfix(
-                    self._augment_postfix(
-                        {
-                            "success": succeeded,
-                            "failed": failed,
-                            "remaining": total_jobs,
-                            "cuda": environment_status.get("cuda", "n/a"),
-                            "vllm": environment_status.get("backend", self.config.mineru_backend),
-                            "vllm_mod": environment_status.get("vllm_module", "unknown"),
-                            "cli": environment_status.get("cli", "not found"),
-                        }
-                    )
-                )
+                overall_bar.set_postfix(self._augment_postfix(progress_snapshot(total_jobs)))
 
                 while self._any_worker_alive():
                     try:
@@ -946,21 +1045,7 @@ class BatchProcessor:
                                 overall_bar.update(1)
                                 remaining = max(total_jobs - processed, 0)
                                 overall_bar.set_postfix(
-                                    self._augment_postfix(
-                                        {
-                                            "success": succeeded,
-                                            "failed": failed,
-                                            "remaining": remaining,
-                                            "cuda": environment_status.get("cuda", "n/a"),
-                                            "vllm": environment_status.get(
-                                                "backend", self.config.mineru_backend
-                                            ),
-                                            "vllm_mod": environment_status.get(
-                                                "vllm_module", "unknown"
-                                            ),
-                                            "cli": environment_status.get("cli", "not found"),
-                                        }
-                                    )
+                                    self._augment_postfix(progress_snapshot(remaining))
                                 )
                             continue
 
@@ -992,21 +1077,7 @@ class BatchProcessor:
                                 overall_bar.update(1)
                                 remaining = max(total_jobs - processed, 0)
                                 overall_bar.set_postfix(
-                                    self._augment_postfix(
-                                        {
-                                            "success": succeeded,
-                                            "failed": failed,
-                                            "remaining": remaining,
-                                            "cuda": environment_status.get("cuda", "n/a"),
-                                            "vllm": environment_status.get(
-                                                "backend", self.config.mineru_backend
-                                            ),
-                                            "vllm_mod": environment_status.get(
-                                                "vllm_module", "unknown"
-                                            ),
-                                            "cli": environment_status.get("cli", "not found"),
-                                        }
-                                    )
+                                    self._augment_postfix(progress_snapshot(remaining))
                                 )
                             continue
 
@@ -1180,6 +1251,14 @@ class BatchProcessor:
             "mineru_extra_args": tuple(self.config.mineru_extra_args),
             "env_overrides": dict(self.config.env_overrides),
             "log_progress": self.config.log_progress,
+            "mineru_model_source": self.config.mineru_model_source,
+            "mineru_device_mode": self.config.mineru_device_mode,
+            "mineru_virtual_vram_limit_gb": self.config.mineru_virtual_vram_limit_gb,
+            "mineru_formulas_enabled": self.config.mineru_formulas_enabled,
+            "mineru_tables_enabled": self.config.mineru_tables_enabled,
+            "mineru_tools_config_json": str(self.config.mineru_tools_config_json)
+            if self.config.mineru_tools_config_json
+            else None,
             "memory_pause_threshold": self.config.memory_pause_threshold,
             "memory_resume_threshold": self.config.memory_resume_threshold,
             "cpu_pause_threshold": self.config.cpu_pause_threshold,
@@ -1264,34 +1343,46 @@ class BatchProcessor:
     def _configure_mineru(self) -> None:
         config = load_config()
         dtype = self._resolve_dtype_preference()
-        try:
-            config.update_vllm_settings(
-                data_parallel_size=self.config.data_parallel_size,
-                tensor_parallel_size=self.config.tensor_parallel_size,
-                max_model_len=self.config.max_model_len,
-                dtype=dtype,
-                gpu_memory_utilization=self.config.gpu_memory_utilization,
-                block_size=self.config.block_size,
-                swap_space_mb=self.config.swap_space_mb,
+        if "vllm" in self.config.mineru_backend:
+            try:
+                config.update_vllm_settings(
+                    data_parallel_size=self.config.data_parallel_size,
+                    tensor_parallel_size=self.config.tensor_parallel_size,
+                    max_model_len=self.config.max_model_len,
+                    dtype=dtype,
+                    gpu_memory_utilization=self.config.gpu_memory_utilization,
+                    block_size=self.config.block_size,
+                    swap_space_mb=self.config.swap_space_mb,
+                )
+            except AttributeError:
+                # For compatibility with existing configs lacking new fields
+                config.vllm_settings.data_parallel_size = self.config.data_parallel_size
+                config.vllm_settings.tensor_parallel_size = self.config.tensor_parallel_size
+                config.vllm_settings.max_model_len = self.config.max_model_len
+                config.vllm_settings.dtype = dtype
+                config.vllm_settings.gpu_memory_utilization = self.config.gpu_memory_utilization
+                config.vllm_settings.block_size = self.config.block_size
+                config.vllm_settings.swap_space_mb = self.config.swap_space_mb
+
+            LOGGER.info(
+                "Configured MinerU vLLM settings: gpu_mem_util=%.2f dtype=%s max_seq=%d",
+                self.config.gpu_memory_utilization,
+                dtype,
+                self.config.max_model_len,
             )
-        except AttributeError:
-            # For compatibility with existing configs lacking new fields
-            config.vllm_settings.data_parallel_size = self.config.data_parallel_size
-            config.vllm_settings.tensor_parallel_size = self.config.tensor_parallel_size
-            config.vllm_settings.max_model_len = self.config.max_model_len
-            config.vllm_settings.dtype = dtype
-            config.vllm_settings.gpu_memory_utilization = self.config.gpu_memory_utilization
-            config.vllm_settings.block_size = self.config.block_size
-            config.vllm_settings.swap_space_mb = self.config.swap_space_mb
+        else:
+            config.backend_name = self.config.mineru_backend
+            config.model_source = self.config.mineru_model_source
+            config.device = self.config.mineru_device_mode
+            LOGGER.info(
+                "Configured MinerU pipeline settings: backend=%s device=%s source=%s",
+                config.backend_name,
+                config.device,
+                config.model_source,
+            )
 
         write_config(config)
         self.config.dtype = dtype
-        LOGGER.info(
-            "Configured MinerU vLLM settings: gpu_mem_util=%.2f dtype=%s max_seq=%d",
-            self.config.gpu_memory_utilization,
-            dtype,
-            self.config.max_model_len,
-        )
 
     def _resolve_dtype_preference(self) -> str:
         preferred = self.config.dtype.lower()
@@ -1328,7 +1419,10 @@ class BatchProcessor:
         status["cli"] = cli_path
 
         missing_modules: List[str] = []
-        for module_name in ("torch", "vllm"):
+        required_modules = ["torch"]
+        if "vllm" in self.config.mineru_backend:
+            required_modules.append("vllm")
+        for module_name in required_modules:
             try:
                 importlib.import_module(module_name)
             except ModuleNotFoundError:
@@ -1431,10 +1525,18 @@ class BatchProcessor:
         self._resource_thread.start()
 
     def _stop_resource_monitor(self) -> None:
-        if self._resource_thread is None:
-            return
-        self._resource_thread.join(timeout=2)
-        self._resource_thread = None
+        if self._resource_thread is not None:
+            self._shutdown_event.set()
+            self._resource_thread.join(timeout=2.0)
+            self._resource_thread = None
+
+    def _warmup_cuda(self) -> None:
+        try:
+            warmup_gpu(0, iterations=2, tensor_size=131_072, show_progress=False)
+        except GPUUnavailableError:
+            LOGGER.debug("Skipping GPU warmup because no compatible GPU is available.")
+        except Exception as exc:
+            LOGGER.warning("GPU warmup failed: %s", exc)
 
     def _current_gpu_snapshot(self) -> Optional[GPUTelemetry]:
         with self._resource_lock:

@@ -101,6 +101,11 @@ def test_build_config_applies_profile_and_overrides(tmp_path: Path) -> None:
     assert config.env_overrides["CUSTOM"] == "VALUE"
     assert config.env_overrides["OMP_NUM_THREADS"] == "32"
     assert "PYTORCH_CUDA_ALLOC_CONF" in config.env_overrides
+    assert config.mineru_device_mode == "cuda"
+    assert config.mineru_model_source == "huggingface"
+    assert config.mineru_virtual_vram_limit_gb == pytest.approx(config.worker_memory_limit_gb)
+    assert config.mineru_formulas_enabled is True
+    assert config.mineru_tables_enabled is True
 
 
 def test_build_config_gpu_overrides(tmp_path: Path) -> None:
@@ -199,8 +204,6 @@ def test_main_end_to_end_success(tmp_path: Path, fake_mineru: Path) -> None:
             "1",
             "--mineru-cli",
             str(fake_mineru),
-            "--backend",
-            "test-backend",
             "--poll-interval",
             "0.1",
             "--progress-interval",

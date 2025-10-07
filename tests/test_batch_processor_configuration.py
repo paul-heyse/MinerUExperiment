@@ -28,10 +28,16 @@ def _make_config(tmp_path: Path) -> BatchProcessorConfig:
         retry_delay=1.0,
         progress_interval=1.5,
         mineru_cli="mineru",
-        mineru_backend="backend",
+        mineru_backend="pipeline",
         mineru_extra_args=("--foo", "bar"),
         env_overrides={"CUSTOM": "1", "OMP_NUM_THREADS": "16"},
         log_progress=True,
+        mineru_device_mode="cuda:0",
+        mineru_virtual_vram_limit_gb=16.0,
+        mineru_formulas_enabled=True,
+        mineru_tables_enabled=False,
+        mineru_model_source="local",
+        mineru_tools_config_json=tmp_path / "tools.json",
         memory_pause_threshold=0.85,
         memory_resume_threshold=0.75,
         cpu_pause_threshold=0.93,
@@ -54,13 +60,22 @@ def test_worker_env_populates_defaults_and_preserves_overrides(tmp_path: Path) -
     assert env["CUSTOM"] == "1"
     assert env["OMP_NUM_THREADS"] == "16"
     assert env["MKL_NUM_THREADS"] == str(config.mkl_threads)
-    assert env["MINERU_VLLM_GPU_MEMORY_UTILIZATION"] == f"{config.gpu_memory_utilization:.2f}"
-    assert env["MINERU_VLLM_TENSOR_PARALLEL_SIZE"] == str(config.tensor_parallel_size)
-    assert env["MINERU_VLLM_DATA_PARALLEL_SIZE"] == str(config.data_parallel_size)
-    assert env["MINERU_VLLM_MAX_MODEL_LEN"] == str(config.max_model_len)
-    assert env["MINERU_VLLM_BLOCK_SIZE"] == str(config.block_size)
-    assert env["MINERU_VLLM_SWAP_SPACE_MB"] == str(config.swap_space_mb)
-    assert env["MINERU_VLLM_DTYPE"] == config.dtype
+    assert env["MINERU_DEVICE_MODE"] == config.mineru_device_mode
+    assert env["MINERU_MODEL_SOURCE"] == config.mineru_model_source
+    assert env["MINERU_FORMULA_ENABLE"] == "true"
+    assert env["MINERU_TABLE_ENABLE"] == "false"
+    assert env["MINERU_VIRTUAL_VRAM_SIZE"] == "16"
+    assert env["MINERU_TOOLS_CONFIG_JSON"] == str(config.mineru_tools_config_json)
+    for key in (
+        "MINERU_VLLM_GPU_MEMORY_UTILIZATION",
+        "MINERU_VLLM_TENSOR_PARALLEL_SIZE",
+        "MINERU_VLLM_DATA_PARALLEL_SIZE",
+        "MINERU_VLLM_MAX_MODEL_LEN",
+        "MINERU_VLLM_BLOCK_SIZE",
+        "MINERU_VLLM_SWAP_SPACE_MB",
+        "MINERU_VLLM_DTYPE",
+    ):
+        assert key not in env
 
 
 def test_mineru_command_includes_extra_args(tmp_path: Path) -> None:
@@ -90,10 +105,10 @@ def test_mineru_command_includes_extra_args(tmp_path: Path) -> None:
 
 def test_worker_env_isolated_per_call(tmp_path: Path, monkeypatch) -> None:
     config = _make_config(tmp_path)
-    monkeypatch.setenv("MINERU_VLLM_GPU_MEMORY_UTILIZATION", "0.11")
+    monkeypatch.setenv("MINERU_DEVICE_MODE", "cpu")
     env = _worker_env(config)
 
-    assert env["MINERU_VLLM_GPU_MEMORY_UTILIZATION"] == "0.11"
-    os.environ.pop("MINERU_VLLM_GPU_MEMORY_UTILIZATION", None)
+    assert env["MINERU_DEVICE_MODE"] == "cpu"
+    os.environ.pop("MINERU_DEVICE_MODE", None)
     env2 = _worker_env(config)
-    assert env2["MINERU_VLLM_GPU_MEMORY_UTILIZATION"] == f"{config.gpu_memory_utilization:.2f}"
+    assert env2["MINERU_DEVICE_MODE"] == config.mineru_device_mode

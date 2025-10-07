@@ -53,6 +53,7 @@ def main() -> int:
     sleep = float(behavior.get("sleep", os.environ.get("MINERU_TEST_SLEEP", 0)))
     failures_before_success = int(behavior.get("failures_before_success", 0))
     permanent_failure = bool(behavior.get("permanent_failure", False))
+    omit_outputs = bool(behavior.get("omit_outputs", False))
 
     attempts_path = pdf_path.with_suffix(pdf_path.suffix + ".attempts")
     attempts = 0
@@ -78,6 +79,9 @@ def main() -> int:
             f"transient failure for {pdf_path.name} on attempt {attempts}/{failures_before_success}\\n"
         )
         return 1
+
+    if omit_outputs:
+        return 0
 
     stem = pdf_path.stem
     (output_dir / f"{stem}.md").write_text(
@@ -161,6 +165,7 @@ def stub_batch_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(batch_processor, "MetricsCollector", DummyMetrics, raising=False)
     monkeypatch.setattr(batch_processor, "load_config", lambda: DummyMineruConfig(), raising=False)
     monkeypatch.setattr(batch_processor, "write_config", lambda config: None, raising=False)
+    monkeypatch.setattr(batch_processor, "warmup_gpu", lambda *args, **kwargs: None, raising=False)
     monkeypatch.setattr(
         batch_processor,
         "_ORIGINAL_PREFLIGHT",

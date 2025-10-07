@@ -10,7 +10,7 @@ Baseline template for Python projects in Cursor on Ubuntu.
 
 See `.cursor/rules`, `.vscode/*`, and `environment.yml` for configuration details.
 
-## MinerU + vLLM Environment
+## MinerU Pipeline Environment
 
 Run `scripts/setup_mineru_env.sh` to install system dependencies, the `mineru[all]` package, and download
 the `MinerU2.5-2509-1.2B` model. The script also verifies an RTX 5090 GPU is visible to CUDA. Once the
@@ -43,15 +43,16 @@ print(report.to_json())
 PY
 ```
 
-The `process_pdf` helper wraps the `mineru` CLI and enforces the `vlm-vllm-engine` backend.
+The `process_pdf` helper wraps the `mineru` CLI and defaults to the `pipeline` backend, matching the CLI’s
+out-of-the-box configuration. You can still pass a different backend when experimenting with other engines.
 
 ### Batch Processor Preflight Checks
 
 Before worker processes launch, the batch processor now performs preflight validation. It verifies that the
-configured `mineru` CLI is executable, required Python modules (`torch`, `vllm`) import successfully, and the
-output directory is writable. The setup progress bar reports each validation outcome so operators can quickly
-diagnose failures. Resolve any reported issues before re-running the batch job to avoid exhausting worker
-retries on misconfigurations.
+configured `mineru` CLI is executable, required Python modules import successfully (always `torch`, and `vllm`
+only when a vLLM backend is selected), and the output directory is writable. The setup progress bar reports
+each validation outcome so operators can quickly diagnose failures. Resolve any reported issues before
+re-running the batch job to avoid exhausting worker retries on misconfigurations.
 
 ## Performance Profiles
 
