@@ -86,7 +86,7 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
         "--workers",
         type=_positive_int,
         default=None,
-        help="Number of worker processes (default uses CPU cores - 2)",
+        help="Number of worker processes (default auto-detects CPU cores - 2)",
     )
     parser.add_argument(
         "--max-retries",

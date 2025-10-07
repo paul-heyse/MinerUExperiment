@@ -257,6 +257,7 @@ def _move_outputs(
         return matches[0] if matches else None
 
     markdown_source = first_match("*.md")
+    markdown_dest: Optional[Path] = None
     if markdown_source:
         markdown_dest = document_dir / f"{stem.name}.md"
         shutil.copy2(markdown_source, markdown_dest)
@@ -276,6 +277,12 @@ def _move_outputs(
             continue
         destination = document_dir / relative_name
         shutil.copy2(source, destination)
+        doc_specific_destination = document_dir / f"{stem.name}_{relative_name}"
+        if doc_specific_destination != destination:
+            shutil.copy2(source, doc_specific_destination)
+            if doc_specific_destination not in written_set:
+                written.append(doc_specific_destination)
+                written_set.add(doc_specific_destination)
         if pattern == "*_content_list.json":
             content_list_destination = destination
         if destination not in written_set:
@@ -315,6 +322,21 @@ def _move_outputs(
         destination = document_dir / relative_name
         shutil.copy2(source, destination)
         artifacts.append(destination)
+        doc_specific_destination = document_dir / f"{stem.name}_{relative_name}"
+        if doc_specific_destination != destination:
+            shutil.copy2(source, doc_specific_destination)
+            artifacts.append(doc_specific_destination)
+
+    if markdown_dest is None or not markdown_dest.exists():
+        artifacts_snapshot: List[str] = []
+        for index, candidate in enumerate(artifacts_dir.rglob("*")):
+            artifacts_snapshot.append(str(candidate))
+            if index >= 9:
+                break
+        raise BatchProcessorError(
+            f"MinerU produced no Markdown output for {pdf_path.name}; "
+            f"inspected {artifacts_snapshot[:10]}..."
+        )
 
     return written, artifacts
 

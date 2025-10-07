@@ -4,7 +4,43 @@ from __future__ import annotations
 
 from typing import Any, Dict, Iterable, Iterator, Optional
 
-from tqdm.auto import tqdm
+try:  # pragma: no cover - exercised indirectly via import path
+    from tqdm.auto import tqdm  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover - fallback for minimal environments
+    class _TqdmShim:
+        """Fallback no-op progress helper when tqdm is unavailable."""
+
+        def __init__(self, iterable=None, **_: Any) -> None:
+            self._iterable = iterable
+
+        def __iter__(self) -> Iterator[Any]:
+            if self._iterable is None:
+                return iter(())
+            return iter(self._iterable)
+
+        def update(self, value: int = 1) -> None:  # noqa: ARG002 - keep signature parity
+            return None
+
+        def set_description(self, description: str, *, refresh: bool = True) -> None:
+            return None
+
+        def set_postfix(self, data: Optional[Dict[str, Any]] = None, *, refresh: bool = True) -> None:
+            return None
+
+        def write(self, message: str) -> None:
+            return None
+
+        def close(self) -> None:
+            return None
+
+        def __enter__(self) -> "_TqdmShim":
+            return self
+
+        def __exit__(self, exc_type, exc, traceback) -> None:  # type: ignore[override]
+            return None
+
+    def tqdm(iterable=None, **kwargs):  # type: ignore[misc]
+        return _TqdmShim(iterable, **kwargs)
 
 
 class ProgressBar:
@@ -72,4 +108,3 @@ __all__ = [
     "ProgressBar",
     "progress_iterable",
 ]
-

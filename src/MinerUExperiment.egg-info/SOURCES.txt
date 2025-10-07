@@ -3,8 +3,12 @@ pyproject.toml
 src/MinerUExperiment/__init__.py
 src/MinerUExperiment/batch_processor.py
 src/MinerUExperiment/gpu_utils.py
+src/MinerUExperiment/markdown_builder.py
+src/MinerUExperiment/metrics.py
 src/MinerUExperiment/mineru_config.py
 src/MinerUExperiment/mineru_runner.py
+src/MinerUExperiment/performance_config.py
+src/MinerUExperiment/progress.py
 src/MinerUExperiment/validation.py
 src/MinerUExperiment/worker_coordinator.py
 src/MinerUExperiment.egg-info/PKG-INFO
@@ -13,4 +17,8 @@ src/MinerUExperiment.egg-info/dependency_links.txt
 src/MinerUExperiment.egg-info/requires.txt
 src/MinerUExperiment.egg-info/top_level.txt
 tests/test_basic.py
+tests/test_batch_processor_configuration.py
+tests/test_batch_processor_integration.py
+tests/test_markdown_builder.py
+tests/test_process_batch.py
 tests/test_validation.py
