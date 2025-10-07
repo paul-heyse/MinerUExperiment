@@ -1,7 +1,7 @@
 [project]
-name = "yourpkg"
+name = "MinerUExperiment"
 version = "0.1.0"
-description = "Replace me in scripts/init.sh"
+description = "MinerUExperiment"
 readme = "README.md"
 requires-python = ">=3.12"
 

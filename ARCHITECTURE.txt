@@ -1,0 +1,202 @@
+```
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    MinerU + vLLM Batch Processing System                     ║
+║                      OpenSpec Change Proposals Complete                      ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ HARDWARE CONFIGURATION                                                       │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ • GPU: RTX 5090 (24GB VRAM) - 95% utilization                               │
+│ • CPU: AMD 9950x (16 cores) - 12-14 workers                                 │
+│ • RAM: 192GB - 10-12GB per worker, 150GB total allocation                   │
+│ • OS: Linux (Ubuntu 22.04+)                                                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ SYSTEM ARCHITECTURE                                                          │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+    PDFsToProcess/                MDFilesCreated/
+    ├── doc1.pdf    ──┐           ├── doc1.md
+    ├── doc2.pdf      │           ├── doc1.structured.md
+    ├── doc3.pdf      │           ├── doc1_content_list.json
+    ├── ...           │           ├── doc1_middle.json
+    └── docN.pdf      │           ├── doc1_artifacts/
+                      │           ├── doc2.md
+                      │           ├── doc2.structured.md
+                      ▼           └── ...
+         ┌────────────────────────┐
+         │  Batch Processor       │ ◄─── CLI: python scripts/process_batch.py
+         │  (orchestrator)        │      --workers 14 --profile throughput
+         └────────────────────────┘
+                      │
+          ┌───────────┴───────────┐
+          │ Worker Coordinator    │
+          │ (file-based locks)    │
+          └───────────┬───────────┘
+                      │
+      ┌───────┬───────┼───────┬───────┐
+      ▼       ▼       ▼       ▼       ▼
+   Worker  Worker  Worker  Worker  Worker   (12-14 parallel workers)
+     #1      #2      #3      #4     ...#14
+      │       │       │       │       │
+      └───────┴───────┴───────┴───────┘
+                      │
+                      ▼
+         ┌────────────────────────┐
+         │  MinerU + vLLM Engine  │
+         │  (GPU-accelerated)     │ ◄─── MinerU2.5-2509-1.2B model
+         └────────────────────────┘      vlm-vllm-engine backend
+                      │                   GPU warmup routine
+                      ▼
+         ┌────────────────────────┐
+         │  MinerU Output         │
+         │  • Markdown            │
+         │  • content_list.json   │
+         │  • middle.json         │
+         └────────────────────────┘
+                      │
+                      ▼
+         ┌────────────────────────┐
+         │ Enhanced Markdown      │
+         │ Generator              │ ◄─── Post-processing from
+         │ (post-processor)       │      content_list.json
+         └────────────────────────┘
+                      │
+                      ▼
+         ┌────────────────────────┐
+         │  Structured Markdown   │
+         │  • Clear hierarchies   │
+         │  • Tables (HTML)       │
+         │  • Equations (LaTeX)   │
+         │  • Image captions      │
+         └────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ CHANGE PROPOSALS (All Validated ✓)                                          │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│ 1. add-mineru-vllm-integration          [21 tasks] [6 requirements]         │
+│    Foundation: MinerU + vLLM setup, GPU warmup, forced GPU usage            │
+│                                                                              │
+│ 2. add-batch-processing-system          [34 tasks] [10 requirements]        │
+│    Parallelization: 12-14 workers, coordination, progress tracking          │
+│                                                                              │
+│ 3. add-enhanced-markdown-generation     [38 tasks] [10 requirements]        │
+│    Quality: Structured MD from content_list.json, RAG-ready output          │
+│                                                                              │
+│ 4. add-performance-optimization         [45 tasks] [12 requirements]        │
+│    Efficiency: vLLM tuning, profiles, metrics, resource optimization        │
+│                                                                              │
+│ TOTAL: 138 tasks • 38 requirements • 95+ scenarios                          │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ PERFORMANCE PROFILES                                                         │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│ THROUGHPUT  ──  14 workers, 95% GPU mem, aggressive batching                │
+│                 Max PDFs/hour, high CPU/GPU utilization                      │
+│                                                                              │
+│ BALANCED    ──  12 workers, 90% GPU mem (default)                           │
+│                 Good throughput with stability                               │
+│                                                                              │
+│ LATENCY     ──  4-6 workers, optimized per-PDF speed                        │
+│                 Fast individual PDF processing                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ KEY FEATURES                                                                 │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ ✓ GPU Warmup          - Cold start optimization                             │
+│ ✓ Force GPU Usage     - No CPU fallback                                     │
+│ ✓ Parallel Workers    - 12-14 concurrent processors                         │
+│ ✓ Worker Coordination - File locks prevent duplicates                       │
+│ ✓ Clear Hierarchies   - text_level → # ## ### headers                       │
+│ ✓ Table Preservation  - HTML blocks for structure                           │
+│ ✓ Equation Support    - LaTeX with $$ delimiters                            │
+│ ✓ Image Captions      - Inline with images                                  │
+│ ✓ Error Recovery      - Retry logic (3x) + continue on failure              │
+│ ✓ Graceful Shutdown   - SIGINT handling                                     │
+│ ✓ Progress Tracking   - Live updates                                        │
+│ ✓ Resource Monitoring - CPU, memory, GPU utilization                        │
+│ ✓ Performance Metrics - Throughput, latency, utilization reports            │
+│ ✓ CPU Optimization    - Thread pinning, affinity                            │
+│ ✓ Memory Optimization - 10-12GB per worker, pooling                         │
+│ ✓ I/O Optimization    - Large buffers, async operations                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ OUTPUT FILES (per PDF)                                                       │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ • doc.md                  - Original MinerU Markdown                         │
+│ • doc.structured.md       - Enhanced hierarchical Markdown (RAG-ready)      │
+│ • doc_content_list.json   - Structured content blocks                       │
+│ • doc_middle.json         - Detailed layout tree                            │
+│ • doc_artifacts/          - Supporting files                                │
+│ • performance_report.json - Batch performance metrics                       │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ MODULES TO BE CREATED                                                        │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ src/MinerUExperiment/                                                        │
+│   ├── mineru_config.py          - Configuration management                  │
+│   ├── gpu_utils.py              - GPU warmup and utilities                  │
+│   ├── batch_processor.py        - Orchestration and worker management       │
+│   ├── worker_coordinator.py     - Coordination logic (lock files)           │
+│   ├── markdown_builder.py       - content_list.json → Markdown              │
+│   ├── performance_config.py     - Performance tuning profiles               │
+│   └── metrics.py                - Performance metrics collection             │
+│                                                                              │
+│ scripts/                                                                     │
+│   ├── process_batch.py          - Batch processing CLI                      │
+│   └── postprocess_markdown.py   - Standalone post-processing CLI            │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ QUICK COMMANDS                                                               │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ # View proposals                                                             │
+│ $ openspec list                                                              │
+│ $ openspec show add-mineru-vllm-integration                                 │
+│                                                                              │
+│ # After implementation:                                                      │
+│ $ python scripts/process_batch.py --workers 14 --profile throughput         │
+│ $ python scripts/postprocess_markdown.py MDFilesCreated                     │
+│                                                                              │
+│ # Monitor performance                                                        │
+│ $ watch -n 1 nvidia-smi                                                      │
+│ $ htop                                                                       │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ EXPECTED PERFORMANCE                                                         │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ • Throughput: 20-50 PDFs/hour (varies by PDF complexity)                    │
+│ • GPU Utilization: 90-95%                                                    │
+│ • CPU Utilization: 80-90% (with 14 workers)                                 │
+│ • Memory Usage: 100-150GB out of 192GB                                      │
+│ • Per-PDF Processing: 1-5 minutes average                                   │
+│ • Speedup: 20-30× vs standard Transformers inference                        │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ STATUS: READY FOR IMPLEMENTATION                                             │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ ✅ Stage 1 Complete: All proposals created and validated                     │
+│ ⏳ Stage 2 Pending: Awaiting approval to implement                           │
+│ ⏸️  Stage 3 Future: Archive after deployment                                 │
+│                                                                              │
+│ Next: Say "Approved" and I'll begin implementing all changes!               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+Documentation:
+  • README_PROPOSALS.md       - This summary with status and next steps
+  • IMPLEMENTATION_PLAN.md    - Comprehensive implementation details
+  • QUICKSTART.md            - Quick commands and troubleshooting
+  • openspec/project.md      - Project conventions and tech stack
+  • openspec/AGENTS.md       - OpenSpec workflow guidance
+```
+

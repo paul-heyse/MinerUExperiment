@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>
+<html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if IE 7]>
+<html class="no-js lt-ie9 lt-ie8" lang="en"> <![endif]-->
+<!--[if IE 8]>
+<html class="no-js lt-ie9" lang="en"> <![endif]-->
+<!--[if gt IE 8]><!-->
+<html class='no-js' lang='en'><!--<![endif]-->
+<head>
+	<base target="_top" />
+    <meta charset='utf-8'>
+    <meta content='IE=edge' http-equiv='X-UA-Compatible'>
+    <title>AEAweb Journal Articles Display</title>
+    <meta content='width=device-width, initial-scale=1' name='viewport'>
+    <meta name="format-detection" content="telephone=no">
+    <meta name="route" value="meta">
+    <meta name="csrf-param" content="_csrf">
+<meta name="csrf-token" content="DnvmcXS-50tSfJEQ-QhEl1D1481fpPXiwCOgcBxOpB5AIpVDAPK2Jj0K6CeQWD7nMYWzvQbqmZaQaMQAfx_DSA==">
+    <meta name="Secure-Key" content="dEh6S1V3bTFieXpMcFVfS3BvdWRMeVNrbVA1QU1ua0UweWFEZ2E4cVlleGZJbHpEVHR8Z2VuZXJhbHxWV2x5TkM1NE9Gby5EemwuWUJkV0l5MUVFd050UEU0S1oxZ0NVa2M4ZW04ZkxTWUJYZ3hlUEE9PQ==">    <meta name="jerTk" value="">
+            <script async src="https://www.googletagmanager.com/gtag/js?id=UA-38835597-1"></script>
+        <meta name="citation_title" content="The Political Economy of International Regulatory Cooperation">
+<meta name="citation_publication_date" content="2023/08">
+<meta name="citation_journal_title" content="American Economic Review">
+<meta name="citation_issn" content="0002-8282">
+<meta name="citation_volume" content="113">
+<meta name="citation_issue" content="8">
+<meta name="citation_firstpage" content="2168">
+<meta name="citation_lastpage" content="2200">
+<meta name="citation_doi" content="10.1257/aer.20200780">
+<meta name="citation_pdf_url" content="https://www.aeaweb.org/pdf/doi/10.1257/aer.20200780">
+<meta name="description" content="The Political Economy of International Regulatory Cooperation by Giovanni Maggi and Ralph Ossa. Published in volume 113, issue 8, pages 2168-2200 of American Economic Review, August 2023, Abstract: We examine international regulatory agreements that are negotiated under lobbying pressures from produ...">
+<meta name="keywords" content="Trade Policy; International Trade Organizations, Empirical Studies of Trade, Economic Integration, Information and Product Quality; Standardization and Compatibility, Economics of Regulation">
+<meta name="citation_author" content="Maggi, Giovanni">
+<meta name="citation_author_institution" content="Yale U and FGV Brazilian School of Economics and Finance">
+<meta name="citation_author" content="Ossa, Ralph">
+<meta name="citation_author_institution" content="U of Zurich">
+<link href="/assets/a7c3e383/stylesheets/glyphicons.css" rel="stylesheet">
+<link href="/assets/a7c3e383/stylesheets/glyphicons-basic-v2.css" rel="stylesheet">
+<link href="/assets/a7c3e383/stylesheets/AeaWebAsset-min.css" rel="stylesheet">
+<link href="/assets/d7b70dcf/themes/smoothness/jquery-ui.css" rel="stylesheet">
+<link href="/assets/a7c3e383/stylesheets/glyphicons-halflings-v2.css" rel="stylesheet">
+<link href="/assets/a7c3e383/stylesheets/print.css" rel="stylesheet" media="print">
+<script src="/assets/f6987dc7/jquery.min.js"></script>
+<script src="/assets/ec038cd4/js/comp-access.js"></script>
+<script src="/assets/bac6c03d/yii.js"></script>
+<script src="/assets/a7c3e383/javascripts/vendor/modernizr.js"></script>
+<script src="//use.typekit.net/egr5vhm.js"></script>
+<script src="/assets/d7b70dcf/jquery-ui.min.js"></script>
+<script src="/assets/a7c3e383/javascripts/AeaWebPluginAsset-min.js"></script>
+<script src="/assets/f01a1af3/js/SecureCsrfAsset-min.js"></script>
+<script src="/assets/43f4af05/js/QueClientAsset-min.js"></script>
+<script src="/assets/e26339b8/js/legal-cookie.js"></script>
+<script>$(document).ready(function() { window.keyAnltcs = keyAnalytics(); });
+$(document).ready(function() { window.qClnt = new queClient({"token":"MURJV2dod0FDZE1WUUlDcXc0QUJncHdfNC03bFNqcUpOdTBJaG1VbmdKZFJoa09MLS18cXVldWVjbGllbnR8ZW5SS1prVXVSMDhMRjM4MUFGa1NHajhhY3dCd2RDTWVNRGNlTENKb0R5ZzNMQnd1RUJsMmZnPT0="}); });
+(function(e){function t(t, n, r, o){"use strict"; function a(){for (var e, n = 0; u.length > n; n++)u[n].href && u[n].href.indexOf(t) > - 1 && (e = !0); e?i.media = r || "all":setTimeout(a)}var i = e.document.createElement("link"), c = n || e.document.getElementsByTagName("script")[0], u = e.document.styleSheets; return i.rel = "stylesheet", i.href = t, i.media = "only x", i.onload = o || function(){}, c.parentNode.insertBefore(i, c), a(), i}var n = function(r, o){"use strict"; if (r && 3 === r.length){var a = e.navigator, i = e.Image, c = !(!document.createElementNS || !document.createElementNS("http://www.w3.org/2000/svg", "svg").createSVGRect || !document.implementation.hasFeature("http://www.w3.org/TR/SVG11/feature#Image", "1.1") || e.opera && - 1 === a.userAgent.indexOf("Chrome") || - 1 !== a.userAgent.indexOf("Series40")), u = new i; u.onerror = function(){n.method = "png", t(r[2])}, u.onload = function(){var e = 1 === u.width && 1 === u.height, a = r[e && c?0:e?1:2]; n.method = e && c?"svg":e?"datapng":"png", n.href = a, t(a, null, null, o)}, u.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==", document.documentElement.className += " grunticon"}}; n.loadCSS = t, e.grunticon = n})(this);grunticon(["https://www.aeaweb.org/assets/a7c3e383/grunticon/icons.data.svg.css", "https://www.aeaweb.org/assets/a7c3e383/grunticon/icons.data.png.css", "/assets/grunticon/icons.fallback.css"], grunticon.svgLoadedCallback);
+try{Typekit.load();}catch(e){}</script></head>
+<body class="internal generic-journal">
+    <div class="cookie-legal-banner">
+        <div class="cookie-content">
+            <div class="cookie-text-wrapper">
+                <h5 style="font-weight: bold !important; text-transform: none !important; font-size: 16px !important;">This website uses cookies.</h5>
+                <p class="cookie-text">By clicking the "Accept" button or continuing to browse our site, you agree to first-party and session-only cookies being stored on your device to enhance site navigation and analyze site performance and traffic. For more information on our use of cookies, please see our <a href="/privacypolicy">Privacy Policy</a>.</p>
+            </div>
+            <div class="cookie-button-wrapper">
+                <button class="button legal-cookie-accept-button">Accept</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        try{
+            $(document).ready(function() { try{ var lgCk = new LegalCookie(); }catch (e){}; });
+        }catch (e){};
+    </script>
+
+
+
+<!--suppress ALL -->
+<header class="site-header" role="banner">
+    <div class="container">
+        <h1 class="site-name">
+            <a href="/"><img alt="American Economic Association" src="/assets/a7c3e383/images/logo.svg">
+            </a>
+        </h1>
+
+        <div class="nav-wrapper">
+
+            <div class="mobile-navigation">
+    <button class="menu-trigger">
+  <span class="menu-icon">
+    <div class="top-left wing"></div>
+    <div class="top-right wing"></div>
+    <div class="middle wing"></div>
+    <div class="bottom-left wing"></div>
+    <div class="bottom-right wing"></div>
+  </span>
+  <span class="trigger-text">
+    Menu
+  </span>
+    </button>
+</div>
+            <div class="navigation-container">
+
+                
+    <nav class="navigation-group" role="navigation">
+        <form class="search mobile-search" role="search" action="/search">
+            <div class="search-wrapper">
+                <input checked="checked" placeholder="Search" type="search" name="q">
+                <input checked="checked" class="icon-search-0" type="submit" value="Search">
+            </div>
+        </form>
+
+        <ul class="primary-navigation">
+            <li>
+                <a href="/journals">Journals</a>
+            </li>
+
+            <li>
+                <a href="/conference">Annual Meeting</a>
+            </li>
+            <li>
+
+                <a href="/joe">Careers</a>
+            </li>
+            <li>
+
+                <a href="/resources">Resources</a>
+            </li>
+            <li>
+
+                <a href="/econlit">EconLit</a>
+            </li>
+            <li>
+
+                <a href="/about-aea/committees">Committees</a>
+            </li>
+            <li>
+                <a href="/ethics">Ethics/Ombuds</a>
+            </li>
+
+        </ul>
+        <span class="has-icon search-trigger-wrapper">
+<a class="search-trigger icon-searchclose-sprite" href="#search">
+</a>
+</span>
+
+        <ul class="utility-navigation">
+            <li>
+                <a href="/membership">Membership</a>
+            </li>
+            <li class="utility-about">
+                <a href="/about-aea">About AEA</a>
+            </li>
+
+                            <li>
+                    <a href="/login/">Log In</a>
+                </li>
+                    </ul>
+
+    </nav>
+
+    <script type="text/javascript">
+
+        function initLoggedinMenu(){
+
+            this.target = $(".utility-navigation");
+            this.menuItems   = null;
+            this.menuWrapper = null;
+
+            this.init = function(){
+
+                this.getMenuItems();
+                this.renderMenu();
+                this.setEvents();
+
+            }
+
+            this.hasMenuItems = function(){
+
+                if(this.menuItems !== null){
+                    return true;
+                }
+
+                return false;
+
+            }
+
+            this.destroyMenuWrapper = function(){
+
+                if($("#loggedin-utility-menu-wrapper").length > 0){
+                    $("#loggedin-utility-menu-wrapper").remove();
+                }
+
+            }
+
+            this.createMenuWrapper = function(){
+
+                this.destroyMenuWrapper();
+
+                $(this.target).append('<li id="loggedin-utility-menu-wrapper"></li>');
+                this.menuWrapper = $("#loggedin-utility-menu-wrapper");
+
+                return this.menuWrapper;
+            }
+
+            this.getMenuItems = function(){
+
+                var menuItems = null;
+
+                if($(".utility-loggedin").length <= 0){
+                    return;
+                }
+
+                if(this.menuItems !== null){
+                    return;
+                }
+
+                menuItems = [];
+
+                $(".utility-loggedin").each(function(){
+                    menuItems.push($(this));
+                });
+
+                this.menuItems = menuItems;
+
+            }
+
+            this.setMenuItems = function(){
+
+                $(this.menuWrapper).html('<li id="loggedin-utility-button">Profile</li><div id="loggedin-utility-list"></div>');
+
+                for(var item in this.menuItems){
+                    $(this.menuWrapper).find("#loggedin-utility-list").append('<li>'+this.menuItems[item].html()+'</li>');
+                }
+
+            }
+
+            this.renderMenu = function(){
+
+                if(!this.hasMenuItems()){
+                    return;
+                }
+
+                this.createMenuWrapper();
+                this.setMenuItems();
+
+            }
+
+            this.showHideList = function(){
+
+                var display = null;
+                var target = $(this.menuWrapper).find("#loggedin-utility-list");
+
+                display = $(target).css("display");
+
+                if(display === "none"){
+                    $(target).css("display","block");
+                    this.positionList();
+                }else{
+                    $(target).css("display","none");
+                }
+
+            }
+
+            this.positionList = function(){
+
+                var btnHeight = null;
+                var button = $(this.menuWrapper).find("#loggedin-utility-button");
+                var list = $(this.menuWrapper).find("#loggedin-utility-list");
+
+                btnHeight = $(this.menuWrapper).outerHeight(true);
+
+                $(list).css("top",(btnHeight - 2)+"px");
+
+            }
+
+            this.setEvents = function(){
+
+                var _self = this;
+
+                $(this.menuWrapper).find("#loggedin-utility-button").unbind();
+                $(this.menuWrapper).find("#loggedin-utility-button").bind("click",function(){
+
+                    _self.showHideList();
+
+                });
+
+            }
+
+        }
+
+        logMenu = new initLoggedinMenu();
+        logMenu.init();
+
+        /*var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', 'UA-38835597-1']);
+        _gaq.push(['_trackPageview']);
+        (function() {
+            var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+            var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+        })();*/
+
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-38835597-1');
+
+    </script>
+            </div>
+        </div>
+    </div>
+    <form class="search desktop-search" role="search" method="get" action="/search">
+        <div class="container">
+            <div class="search-wrapper">
+                <input placeholder="Search" type="search" name="q">
+                <input class="icon-search-0" type="submit" value="Search">
+            </div>
+        </div>
+    </form>
+</header>
+	<div class="breadcrumbs-wrapper"><div class="container"><ol class="breadcrumbs"><li><a href="/">Home</a></li><li><a href="/journals">Journals</a></li><li><a href="/journals/aer">American Economic Review</a></li><li><a href="/issues/730#10.1257/aer.20200780">AER August 2023</a></li><li><a href="/articles?id=10.1257/aer.20200780">The Political Economy of International Regulatory Cooperation</a></li><li><a href="/articles/pdf/doi/10.1257/aer.20200780">Full Text</a></li></ol></div></div>	<main class="main-content " role="main"><div class="container">    <script type='text/javascript' src='/js/articlesTracking.js'></script>
+
+    <section class="primary">
+
+        
+<div id="journal-header">
+    <a href="/journals/aer"><img id="cover" src="/assets/a7c3e383/images/aer-icon.svg"></a>
+    <div>
+        <a class="journal-title-url" href="/journals/aer"><h1 id="journal-title">American Economic Review</h1></a>
+        <p id="journal-issn">
+            <span id="print">ISSN 0002-8282 (Print)</span>
+            <span id="separator"> | </span>
+            <span id="online">ISSN 1944-7981 (Online)</span>
+        </p>
+    </div>
+</div>        <div id='tertiary-navigation'>
+    <div class="nav-item"><label><span class='label-text'>About the <i>AER</i></span><span class="chevron basics-v2 basics-221-chevron-down-v2"></span></label><div class="nav-item-list"><ul><li><a href="/journals/aer/editors">Editors</a></a></li><li><a href="/journals/aer/editorial-policy">Editorial Policy</a></a></li><li><a href="https://pubs.aeaweb.org/doi/pdfplus/10.1257/pandp.115.743" target="_blank">Annual Report of the Editor</a></a></li><li><a href="/journals/aer/editorial-process">Editorial Process: Discussions with the Editors</a></a></li><li><a href="/journals/aer/research-highlights">Research Highlights</a></a></li><li><a href="/journals/aer/contact-aer">Contact Information</a></a></li></ul></div></div><div class="nav-item"><label><span class='label-text'>Articles and Issues</span><span class="chevron basics-v2 basics-221-chevron-down-v2"></span></label><div class="nav-item-list"><ul><li><a href="/journals/aer/current-issue">Current Issue</a></a></li><li><a href="/journals/aer/issues">All Issues</a></a></li><li><a href="/journals/aer/forthcoming">Forthcoming Articles</a></a></li></ul></div></div><div class="nav-item"><label><span class='label-text'>Information for Authors and Reviewers</span><span class="chevron basics-v2 basics-221-chevron-down-v2"></span></label><div class="nav-item-list"><ul><li><a href="/journals/aer/submissions">Submission Guidelines</a></a></li><li><a href="/journals/aer/accepted-article-guidelines">Accepted Article Guidelines</a></a></li><li><a href="/journals/aer/style-guide">Style Guide</a></a></li><li><a href="/journals/aer/reviewers">Reviewer Guidelines</a></a></li></ul></div></div></div>
+
+<div id='tertiary-navigation-mobile'>
+    <p><span class="menu-icon basics-v2 basics-600-menu-v2"></span>Menu</p>
+    <div id="nav-list">
+        <div class="nav-item"><label><span class='label-text'>About the <i>AER</i></span><span class="chevron basics-v2 basics-221-chevron-down-v2"></span></label><div class="nav-item-list"><ul><li><a href="/journals/aer/editors">Editors</a></a></li><li><a href="/journals/aer/editorial-policy">Editorial Policy</a></a></li><li><a href="https://pubs.aeaweb.org/doi/pdfplus/10.1257/pandp.115.743" target="_blank">Annual Report of the Editor</a></a></li><li><a href="/journals/aer/editorial-process">Editorial Process: Discussions with the Editors</a></a></li><li><a href="/journals/aer/research-highlights">Research Highlights</a></a></li><li><a href="/journals/aer/contact-aer">Contact Information</a></a></li></ul></div></div><div class="nav-item"><label><span class='label-text'>Articles and Issues</span><span class="chevron basics-v2 basics-221-chevron-down-v2"></span></label><div class="nav-item-list"><ul><li><a href="/journals/aer/current-issue">Current Issue</a></a></li><li><a href="/journals/aer/issues">All Issues</a></a></li><li><a href="/journals/aer/forthcoming">Forthcoming Articles</a></a></li></ul></div></div><div class="nav-item"><label><span class='label-text'>Information for Authors and Reviewers</span><span class="chevron basics-v2 basics-221-chevron-down-v2"></span></label><div class="nav-item-list"><ul><li><a href="/journals/aer/submissions">Submission Guidelines</a></a></li><li><a href="/journals/aer/accepted-article-guidelines">Accepted Article Guidelines</a></a></li><li><a href="/journals/aer/style-guide">Style Guide</a></a></li><li><a href="/journals/aer/reviewers">Reviewer Guidelines</a></a></li></ul></div></div>    </div>
+</div>
+
+
+        <h1>Article Full-Text Access </h1>
+
+        <section class="article-information citation" style="margin-top:30px; margin-bottom:30px;">
+            <cite>
+                                    <span>
+                                                                                Maggi, Giovanni and Ralph Ossa.
+
+    </span>                 <span class="year">2023.</span>
+                <span class="title">"The Political Economy of International Regulatory Cooperation."</span>                <span class="journal">American Economic Review</span>,
+
+                <span class="vol">
+                113  (8): 2168&ndash;2200<span class="pages">.</span>
+                </span>
+
+            </cite>
+        </section>
+
+            
+        
+        <ul style="" class="atypon-button-list">
+                            <li style="margin-right:2px;"><a class="button" href="/login?return_path=/articles/pdf/doi/10.1257%2Faer.20200780">AEA Member Login</a></li>
+                            <li style="margin-right:2px;"><a class="button-subtle" href="https://pubs.aeaweb.org/doi/pdfplus/10.1257/aer.20200780">Institutional Access</a></li>
+                            <li style="margin-right:2px;"><a class="button-subtle" href="https://pubs.aeaweb.org/doi/pdfplus/10.1257/aer.20200780">Article Purchase</a></li>
+                            <li style="margin-right:2px;"><a class="button-subtle" href="https://pubs.aeaweb.org/action/ssostart?idp=https%3A%2F%2Fidp.eduserv.org.uk%2Fopenathens&redirectUri=%2Fdoi%2Fpdfplus%2F10.1257%2Faer.20200780">OpenAthens Access</a></li>
+                    </ul>
+
+            Please contact us at <a href="mailto:notify@aeaweb.org">notify@aeaweb.org</a> with any problems or questions.
+
+    <br /><br /><br />
+    </section><aside class="secondary" role="complementary">
+    <nav class="secondary-navigation" role="navigation">
+        <h2><a href="/journals">Journals</a></h2><ul><li><div class="nav-divider"></div></li><li class="is-active"><a href="/journals/aer"><em>American Economic Review</em></a></li><li><a href="/journals/aeri"><em>AER: Insights</em></a></li><li><a href="/journals/app"><em>AEJ: Applied Economics</em></a></li><li><a href="/journals/pol"><em>AEJ: Economic Policy</em></a></li><li><a href="/journals/mac"><em>AEJ: Macroeconomics</em></a></li><li><a href="/journals/mic"><em>AEJ: Microeconomics</em></a></li><li><a href="/journals/jel"><em>Journal of Economic Literature</em></a></li><li><a href="/journals/jep"><em>Journal of Economic Perspectives</em></a></li><li><a href="/journals/pandp"><em>AEA Papers and Proceedings</em></a></li><li><div class="nav-divider"></div></li><li><a href="/journals/subscriptions">Subscriptions</a></li><li><a href="/journals/copyright">Copyright and Permissions</a></li><li><a href="/journals/policies">Policies</a></li><li><a href="/journals/data">Data and Code</a></li><li><a href="/journals/get-journal-alerts">Journal Alerts</a></li><li><a href="/research">Research Highlights</a></li><li><a href="/journals/subscriptions/backissues">Back Issues</a></li><li><a href="/journals/printondemand">Print on Demand</a></li><li><a href="/journals/articles/sgml">Journal Metadata</a></li></ul>    </nav>
+    <section class="action-group">
+            </section>
+</aside>
+</div></main><footer class='site-footer'>
+<div class='container'>
+
+  <nav class='navigation-group'>
+    <ul>
+      <li>
+        <a href="/journals">Journals</a>
+      </li>
+
+      <li>
+        <a href="/conference">Annual Meeting</a>
+      </li>
+
+      <li>
+        <a href="/joe">Careers</a>
+      </li>
+
+      <li>
+        <a href="/resources">Resources</a>
+      </li>
+
+      <li>
+        <a href="/econlit">EconLit</a>
+      </li>
+
+        <li>
+
+            <a href="/about-aea/committees">Committees</a>
+        </li>
+
+      <li>
+        <a href="/membership">Membership</a>
+      </li>
+
+      <li>
+        <a href="/about-aea">About AEA</a>
+      </li>
+
+      
+        <li>
+          <a href="/login/">Log In</a>
+        </li>
+
+      
+      <li>
+        <a class="contact-link" href="/contact">Contact the AEA</a>
+      </li>
+    </ul>
+  </nav>
+
+    <div class="social-legal">
+        <section class='legal'>
+            <ul>
+                <li class='footer-terms'><a href="/terms-of-service/site">Terms of Use</a></li>
+                <li><a href="/privacypolicy">Privacy Policy</a></li>
+                <li class='copyright'>Copyright 2025 American Economic Association. All rights reserved.</li>
+            </ul>
+        </section>
+
+        <section class='social-media'>
+            <a href="/social">
+                <h3 class='section-title'>Follow us:</h3>
+                <div class="social-icons">
+                    <img class="social-icon" src="/assets/a7c3e383/images/x-logo-black.png" />
+                    <img class="social-icon" src="/assets/a7c3e383/images/bluesky_logo.svg" />
+                    <img class="social-icon" src="/assets/a7c3e383/images/fb_icon.svg" />
+                </div>
+            </a>
+        </section>
+    </div>
+
+    </div>
+</footer></body><script>jQuery(function ($) {
+    // ***********************
+    // Desktop Nav
+    // ***********************
+    const navItem = $('.nav-item', '#tertiary-navigation');
+    
+    // Handle open menu
+    $(navItem).on('mouseenter', function() {
+        const list = $(".nav-item-list", $(this));
+        let offset = $(this).height();
+        $(list).css('top', offset + "px");
+
+        const elHeight = $(list)[0].scrollHeight;
+        $(list).animate({height: elHeight}, 200);
+    });
+    
+    // Handle close menu
+    $(navItem).on('mouseleave', function() {
+        const list = $(".nav-item-list", this);
+        $(list).stop(true, true);
+        $(list).animate({height: 0}, 100);
+    });
+    
+    function getElementRightEdge(element) {
+        const pos = element.getBoundingClientRect();
+        return pos.left + element.offsetWidth;
+    }
+    
+    function updateDropdownWidths() {
+        const navbar = document.getElementById('tertiary-navigation');
+        const navbarRightEdge = getElementRightEdge(navbar);
+        
+        const submenus = navbar.children;
+        for (let submenu of submenus) {
+            const navitemList = submenu.querySelector('.nav-item-list');
+            if (navitemList) {
+                navitemList.style.left = "0";
+    
+                const navitemListRightEdge = getElementRightEdge(navitemList);
+                
+                const delta = navbarRightEdge - navitemListRightEdge;
+                
+                if (delta < 0) {
+                    navitemList.style.left = delta + "px";
+                }
+            }
+        }
+    }
+    
+    $( window ).on('load', function() {
+        updateDropdownWidths();
+    });
+    
+    $(window).on('resize', function () {
+        updateDropdownWidths();
+    })
+    
+    
+    // ***********************
+    // Mobile Nav
+    // ***********************
+    const mobileNav = $('#tertiary-navigation-mobile');
+    const mobileNavItems = $('.nav-item', mobileNav);
+    const trigger = $('p', mobileNav);
+    
+    // Handle menu open/close
+    $(trigger).on('click', function() {
+        if ($(mobileNav).hasClass('open')) {
+            // Switch menu icon
+            $('.menu-icon', mobileNav).removeClass('basics-599-menu-close-v2');
+            $('.menu-icon', mobileNav).addClass('basics-600-menu-v2');
+            
+            // Animate menu closing
+            $('#nav-list', mobileNav).animate({height: 0}, 100, function() {
+                $(mobileNav).removeClass('open');
+            });
+            
+            // Close all children
+            $(mobileNavItems).removeClass('open');
+            $('ul', mobileNavItems).css('height', '0');
+        }
+        else {
+            $(mobileNav).addClass('open');
+            
+            // Switch menu icon
+            $('.menu-icon', mobileNav).removeClass('basics-600-menu-v2');
+            $('.menu-icon', mobileNav).addClass('basics-599-menu-close-v2');
+            
+            // Animate menu closing
+            const elHeight = $('#nav-list', mobileNav)[0].scrollHeight;
+            $('#nav-list', mobileNav).animate({height: elHeight}, 200, function() {
+                $('#nav-list', mobileNav).css('height', 'auto');
+            });
+        }
+    })
+    
+    // Handle submenu open/close 
+    $(mobileNavItems).on('click', function() {
+        if ($(this).hasClass('open')) {
+            $(this).removeClass('open');
+            $('ul', this).animate({height: 0}, 100);
+        }
+        else {
+            $(this).addClass('open');
+            const elHeight = $('ul', this)[0].scrollHeight;
+            $('ul', this).animate({height: elHeight}, 200, function() {
+                $(this).css('height', 'auto');
+            });
+        }
+    })
+});</script></html>

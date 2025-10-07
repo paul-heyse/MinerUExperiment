@@ -1,0 +1,556 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>EconStor: Smart-Working: Work Flexibility without Constraints</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="Generator" content="DSpace 6.4" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <meta name="description" content="EconStor is a publication server for scholarly economic literature, provided as a non-commercial public service by the ZBW." lang="en" />
+
+
+		<meta name="title" content="Smart-Working: Work Flexibility without Constraints" />
+
+
+		<meta name="gwt:property" content="locale=en" />
+		<!-- STW suggest GWT Moduldeklaration //-->
+		<meta name='gwt:module' content='eu.zbw.EconStor.InfoPopup.Main=eu.zbw.EconStor.InfoPopup.Main' />
+		<meta name='gwt:module' content='eu.zbw.MoreStatsInfo.Main=eu.zbw.MoreStatsInfo.Main' />
+        <meta name='gwt:module' content='eu.zbw.RePEcCitEc.Main=eu.zbw.RePEcCitEc.Main' />
+
+		<!-- /STW GWT Moduldeklaration //-->
+		<!-- STW suggest Popup und tagcloud //-->
+        <link rel="preload" as="image" href="/image/logo-econstor-dark.png" type="image/png">
+        <link rel="stylesheet" type="text/css" media="all" href="/cssJawrPath/gzip_N263808996/bundles/cssbundle.css" />
+
+
+
+        
+        <link href="https://www.econstor.eu/bibtexexport/10419/216561/Angelici2020Smart.bib" rel="describedby" type="application/x-bibtex" />
+        
+        <link href="https://hdl.handle.net/10419/216561" rel="cite-as" />
+        
+        <link href="https://www.econstor.eu/bitstream/10419/216561/1/cesifo1_wp8165.pdf" rel="item" type="application/pdf" />
+        
+
+        
+		<!-- /STW suggest Popup //-->
+
+        
+        
+        <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon"/>
+
+        
+
+        <script type="text/javascript" src="/jsJawrPath/gzip_N1522907711/bundles/jQuerylib.js" defer="defer" ></script>
+
+        
+        
+        <script type="text/javascript" src="/jsJawrPath/gzip_N111575482/bundles/lib1.js" defer="defer" ></script>
+
+
+        <link rel="stylesheet" type="text/css" media="print" href="/cssJawrPath/gzip_2124493305/bundles/print.css" />
+
+        
+
+        <link rel="search" type="application/opensearchdescription+xml" href="/open-search/description.xml" title="DSpace"/>
+
+
+<link rel="schema.DCTERMS" href="http://purl.org/dc/terms/" />
+<link rel="schema.DC" href="http://purl.org/dc/elements/1.1/" />
+<meta name="DC.creator" content="Angelici, Marta" xml:lang="en" />
+<meta name="DC.creator" content="Profeta, Paola" xml:lang="en" />
+<meta name="DCTERMS.issued" content="2020" xml:lang="en" scheme="DCTERMS.W3CDTF" />
+<meta name="DC.identifier" content="http://hdl.handle.net/10419/216561" scheme="DCTERMS.URI" />
+<meta name="DCTERMS.abstract" content="Does removing the constraints of time and place of work increase the utility of workers and firms? We design a randomized experiment on a sample of workers in a large Italian company: workers are randomly divided into a treated group that engages in flexible space and time job (which we call &quot;smart-working&quot;) one day per week for 9 months and a control group that continues to work traditionally. By comparing the treated and control workers, we find causal evidence that the flexibility of smart-working increases the productivity of workers and improves their well-being and work-life balance. We also observe that the effects are stronger for women and that there are no significant spillover effects within workers of a team." xml:lang="en" />
+<meta name="DC.language" content="eng" xml:lang="en" scheme="DCTERMS.RFC1766" />
+<meta name="DC.publisher" content="Munich: Center for Economic Studies and ifo Institute (CESifo)" xml:lang="en" />
+<meta name="DC.relation" content="CESifo Working Paper No.8165" xml:lang="en" />
+<meta name="DC.subject" content="J16" xml:lang="en" />
+<meta name="DC.subject" content="J22" xml:lang="en" />
+<meta name="DC.subject" content="J24" xml:lang="en" />
+<meta name="DC.subject" content="L20" xml:lang="en" />
+<meta name="DC.subject" content="M54" xml:lang="en" />
+<meta name="DC.subject" content="330" xml:lang="en" scheme="DCTERMS.DDC" />
+<meta name="DC.subject" content="randomized control trial" xml:lang="en" />
+<meta name="DC.subject" content="productivity" xml:lang="en" />
+<meta name="DC.subject" content="work-life balance" xml:lang="en" />
+<meta name="DC.subject" content="well-being" xml:lang="en" />
+<meta name="DC.title" content="Smart-Working: Work Flexibility without Constraints" xml:lang="en" />
+<meta name="DC.type" content="Working Paper" xml:lang="en" />
+<meta name="DC.rights" content="http://www.econstor.eu/dspace/Nutzungsbedingungen" xml:lang="en" />
+
+<meta name="citation_keywords" content="Working Paper; randomized control trial; productivity; work-life balance; well-being" />
+<meta name="citation_publication_date" content="2020" />
+<meta name="citation_title" content="Smart-Working: Work Flexibility without Constraints" />
+<meta name="citation_technical_report_number" content="8165" />
+<meta name="citation_publisher" content="Munich: Center for Economic Studies and ifo Institute (CESifo)" />
+<meta name="citation_language" content="eng" />
+<meta name="citation_author" content="Angelici, Marta" />
+<meta name="citation_author" content="Profeta, Paola" />
+<meta name="citation_pdf_url" content="https://www.econstor.eu/bitstream/10419/216561/1/cesifo1_wp8165.pdf" />
+<meta name="citation_abstract_html_url" content="https://www.econstor.eu/handle/10419/216561" />
+<meta name="citation_technical_report_institution" content="CESifo Working Paper" />
+
+
+
+
+
+
+
+    
+    
+
+        
+        
+        
+
+    </head>
+
+    
+    
+    <body >
+    <a class="sr-only" href="#content">Skip navigation</a>
+    
+    <div id="sideflag"><div id="sideflagaservice">A service of the</div><div id="sideflagzbw"><a href="http://www.zbw.eu" class="linksideflag" target="_blank">zbw</a></div></div>
+
+<header class="navbar">
+    <div class="econstorbrandingheader">
+        <div class="container econstorbranding">
+            <div class="row">
+                <div class="col-xs-12  col-sm-5" >
+                    
+                    <a href="/" class="navbar-econstorbrand" /><img src="/image/logo-econstor-dark.png" id="brandinglogo" width="235" height="62" loading="eager" alt="EconStor - Make Your Publications Visible. (Home)"></a>
+                </div>
+                <div class="hidden-xs  col-sm-7">
+                    <div class="hidden-xs econstortopnav" ><ul class="topnavi">
+                        <li><a href="/contact">Contact</a></li>
+                        <li>| <a href="/Impressum">Imprint</a></li>
+                        <li>| <a href="/Datenschutz">Privacy</a></li>
+                        <li>| <a href="/staticpagessitemap">Sitemap</a></li>
+                        <li>| <a href="/erklaerung-zur-barrierefreiheit">Accessibility</a></li>
+                        <li>| <a onclick="javascript:document.repost.locale.value='de';
+                                document.repost.submit();" href="/handle/10419/216561?locale=de">
+                            Deutsch
+                        </a></li>
+                        
+                    </ul></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+            <div class="container js-enabled">
+                
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       <div class="navbar-header navbar-inverse">
+         <button type="button" id="navbutton1" class="navbar-toggle" title="toggle navbar1 dropdown on mobile devices" data-toggle="collapse" data-target="#navbarcollapse1" aria-expanded="false" aria-controls="navbarcollapse1" onclick="$('#navbarcollapse2').collapse('hide')">
+           <span class="icon-bar"></span>
+           <span class="icon-bar"></span>
+           <span class="icon-bar"></span>
+         </button>
+         <button type="button" id="navbutton2" class="navbar-toggle" title="toggle navbar2 dropdown on mobile devices" data-toggle="collapse" data-target="#navbarcollapse2" aria-expanded="false" aria-controls="navbarcollapse2" onclick="$('#navbarcollapse1').collapse('hide')">
+             <span class="glyphicon glyphicon-option-vertical" style="top:-1px"></span>
+         </button>
+           
+       </div>
+       <nav class="collapse navbar-collapse bs-navbar-collapse navbar-inverse" role="navigation" id="navbarcollapse1" aria-labelledby="navbarcollapse1">
+         <ul class="nav navbar-nav">
+           <li class=""><a href="/">Home</a></li>
+
+           <li class="dropdown ">
+             <a href="#" class="dropdown-toggle" data-toggle="dropdown">About EconStor <b class="caret"></b></a>
+             <ul class="dropdown-menu">
+               <li><a href="/about">About EconStor</a></li>
+               <li><a href="/advisoryboard">Advisory Board</a></li>
+               <li><a href="/policy">Policy</a></li>
+               <li><a href="http://blog.econstor.eu/" >News</a></li>
+               <li><a href="/Nutzungsbedingungen">Terms of use</a></li>
+               <li><a href="/dsinfos/usagestatistics">Usage statistics</a></li>
+                 
+             </ul>
+           </li>
+           
+             
+
+                 <li class="dropdown ">
+                     
+                     <a href="#" class="dropdown-toggle" data-toggle="dropdown">Submit <b class="caret"></b></a>
+                     
+                     <ul class="dropdown-menu">
+                     
+                         <li class="dropdown-header">for:</li>
+                         <li><a href="/pubinfo/institutions">institutions</a></li>
+                         <li><a href="/pubinfo/authors">authors</a></li>
+                         
+                         
+                     </ul>
+                 </li>
+             
+           <li class=""><a href="/econbiz-search">Search</a></li>
+
+           <li class="dropdown ">
+             <a href="#" class="dropdown-toggle" data-toggle="dropdown">Browse by <b class="caret"></b></a>
+             <ul class="dropdown-menu">
+
+				
+				
+				
+                 <li><a href="/browse?type=author">Author</a></li>
+                 <li><a href="/browse?type=dateissuedes">Year of Publication</a></li>
+                 <li><a href="/browse?type=doctype">Document Type</a></li>
+				
+                 <li><a href="/community-list">Communities&nbsp;&amp;&nbsp;Collections</a></li>
+                 <li><a href="/journal-list">Journals</a></li>
+                 <li><a href="/monograph-list">Monographs (by Publishers)</a></li>
+
+            </ul>
+          </li>
+       </ul>
+       <ul class="nav navbar-nav">
+         <li class=""><a href="/participants">References</a></li>
+         <li class=""><a href="/faq">FAQ</a></li>
+         <li class=""><a href="/openaccess">Open Access</a></li>
+          
+       </ul>
+
+
+    </nav>
+<!-- only visible on devices with a xs screensize according to Bootstrap -->
+    <nav class="collapse navbar-collapse bs-navbar-collapse navbar-inverse" role="navigation" id="navbarcollapse2" aria-labelledby="navbarcollapse2">
+        <ul class="nav navbar-nav">
+            <li class=" visible-xs-block"><a href="/contact">Contact</a></li>
+            <li class=" visible-xs-block"><a href="/Impressum">Imprint</a></li>
+            <li class=" visible-xs-block"><a href="/Datenschutz">Privacy</a></li>
+            <li class=" visible-xs-block"><a href="/staticpagessitemap">Sitemap</a></li>
+            <li class="visible-xs-block"><a onclick="javascript:document.repost.locale.value='de';
+                document.repost.submit();" href="/handle/10419/216561?locale=de">
+            <img src="/stats/img/flags/de.png" alt="image of flag of de" />
+            Deutsch
+        </a></li>
+            
+        </ul>
+    </nav>
+<!-- /only visible on devices with a xs screensize according to Bootstrap -->
+
+            </div>
+            <noscript>
+                <div class="container js-disabled">
+                    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        <link type="text/css" rel="stylesheet" href="/nav-nojs.css" />
+
+       <nav class="collapse navbar-collapse bs-navbar-collapse navbar-inverse" role="navigation">
+         <ul class="nav navbar-nav">
+           <li class=""><a href="/">Home</a></li>
+           <li><a href="/about">About EconStor</a></li>
+           <li><a href="/advisoryboard">Advisory Board</a></li>
+           <li><a href="/policy">Policy</a></li>
+             
+             
+                 <li><a href="/pubinfo/institutions">submit for&nbsp;institutions</a></li>
+                 <li><a href="/pubinfo/authors">submit for&nbsp;authors</a></li>
+             
+             
+           <li class=""><a href="/simple-search">Search</a></li>
+			
+                 <li><a href="/browse?type=author">browse by&nbsp;Author</a></li>
+                 <li><a href="/browse?type=dateissuedes">browse by&nbsp;Year of Publication</a></li>
+                 <li><a href="/browse?type=doctype">browse by&nbsp;Document Type</a></li>
+            
+                 <li><a href="/community-list">browse by&nbsp;Communities&nbsp;&amp;&nbsp;Collections</a></li>
+                 <li><a href="/journal-list">browse by&nbsp;Journals</a></li>
+                 <li><a href="/monograph-list">browse by&nbsp;Monographs (by Publishers)</a></li>
+
+       </ul>
+       <ul class="nav navbar-nav">
+         <li><a href="http://blog.econstor.eu/" >News</a></li>
+         <li><a href="/Nutzungsbedingungen">Terms of use</a></li>
+         <li><a href="/dsinfos/usagestatistics">Usage statistics</a></li>
+         <li class=""><a href="/participants">References</a></li>
+         <li class=""><a href="/faq">FAQ</a></li>
+         <li class=""><a href="/openaccess">Open Access</a></li>
+       </ul>
+    </nav>
+
+                </div>
+            </noscript>
+
+</header>
+<main id="content" role="main">
+
+
+                
+
+<div class="container">
+                
+
+
+
+  
+
+<ol class="breadcrumb">
+
+  <li><a href="/">EconStor</a></li>
+
+  <li><a href="/handle/10419/18">ifo Institut – Leibniz-Institut für Wirtschaftsforschung an der Universität München</a></li>
+
+  <li><a href="/handle/10419/19">CESifo Working Papers, CESifo GmbH</a></li>
+
+</ol>
+
+</div>                
+
+
+
+        
+<div class="container">
+		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class="col-xs-12" style="overflow-wrap: break-word;">
+
+
+    <script type="text/javascript" src="/eu.zbw.RePEcCitEc.Main/eu.zbw.RePEcCitEc.Main.nocache.js" async="async"></script>
+    <script type="text/javascript">
+        <!--//
+        var RePEcCitEcConfig = {
+            ZitiertVonLabel : "Is cited by:",
+            ZitierteQuellenLabel : "Cites the following sources:",
+            AnzahlDerZitationenLabel : "%ANZAHL% documents.",
+            AnzahlDerZitationLabel : "one document.",
+            AnzahlDerQuellenLabel : "%ANZAHL% sources.",
+            AnzahlDerQuelleLabel : "one source.",
+            RePEcHandle : "RePec:ces:ceswps:_8165"
+        };
+        //-->
+    </script>
+
+		
+		
+		
+		
+
+                
+                <div class="well">Please use this identifier to cite or link to this item:
+
+                <code id="citationhandle">https://hdl.handle.net/10419/216561</code>&nbsp;<button type="button" class="btn btn-default btn-sm" id="citationhandlecopy" data-toggle="tooltip" data-placement="right" title="copy to clipboard" >
+                        <span class="glyphicon glyphicon-copy" aria-hidden="true"></span><span class="sr-only">copy to clipboard</span></button></div>
+
+
+
+    
+    <div class="metadatacontainer" id="itemmetadatacontainer" >
+<div class="row"><div class="col-xs-12 col-sm-4 metadataFieldLabel dc_title">Title:&nbsp;</div><div class="col-xs-12 col-sm-8 metadataFieldValue dc_title" lang="en"><h1 id="itemtitle"><a href="https://www.econstor.eu&#x2F;bitstream&#x2F;10419&#x2F;216561&#x2F;1&#x2F;cesifo1_wp8165.pdf" target="_blank" >Smart-Working:&#x20;Work&#x20;Flexibility&#x20;without&#x20;Constraints <span class="fa-regular fa-file-pdf" aria-hidden="true" style="color:red;"></span></a></h1></div></div>
+<div class="row"><div class="col-xs-12 col-sm-4 metadataFieldLabel dc_contributor_author">Authors:&nbsp;</div><div class="col-xs-12 col-sm-8 metadataFieldValue dc_contributor_author" lang="en"><a class="author"href="/browse?type=author&amp;value=Angelici%2C+Marta">Angelici,&#x20;Marta</a><br /><a class="author"href="/browse?type=author&amp;value=Profeta%2C+Paola">Profeta,&#x20;Paola</a></div></div>
+<div class="row"><div class="col-xs-12 col-sm-4 metadataFieldLabel dc_date_issued">Year of Publication:&nbsp;</div><div class="col-xs-12 col-sm-8 metadataFieldValue dc_date_issued" lang="en">2020</div></div>
+<div class="row"><div class="col-xs-12 col-sm-4 metadataFieldLabel dc_relation_ispartofseries">Series/Report no.:&nbsp;</div><div class="col-xs-12 col-sm-8 metadataFieldValue dc_relation_ispartofseries" lang="en">CESifo&#x20;Working&#x20;Paper&#x20;No.&#x20;8165</div></div>
+<div class="row"><div class="col-xs-12 col-sm-4 metadataFieldLabel dc_publisher">Publisher:&nbsp;</div><div class="col-xs-12 col-sm-8 metadataFieldValue dc_publisher" lang="en">Center&#x20;for&#x20;Economic&#x20;Studies&#x20;and&#x20;ifo&#x20;Institute&#x20;(CESifo),&#x20;Munich</div></div>
+<div class="row"><div class="col-xs-12 col-sm-4 metadataFieldLabel dc_description_abstract">Abstract:&nbsp;</div><div class="col-xs-12 col-sm-8 metadataFieldValue dc_description_abstract" lang="en">Does&#x20;removing&#x20;the&#x20;constraints&#x20;of&#x20;time&#x20;and&#x20;place&#x20;of&#x20;work&#x20;increase&#x20;the&#x20;utility&#x20;of&#x20;workers&#x20;and&#x20;firms?&#x20;We&#x20;design&#x20;a&#x20;randomized&#x20;experiment&#x20;on&#x20;a&#x20;sample&#x20;of&#x20;workers&#x20;in&#x20;a&#x20;large&#x20;Italian&#x20;company:&#x20;workers&#x20;are&#x20;randomly&#x20;divided&#x20;into&#x20;a&#x20;treated&#x20;group&#x20;that&#x20;engages&#x20;in&#x20;flexible&#x20;space&#x20;and&#x20;time&#x20;job&#x20;(which&#x20;we&#x20;call&#x20;&quot;smart-working&quot;)&#x20;one&#x20;day&#x20;per&#x20;week&#x20;for&#x20;9&#x20;months&#x20;and&#x20;a&#x20;control&#x20;group&#x20;that&#x20;continues&#x20;to&#x20;work&#x20;traditionally.&#x20;By&#x20;comparing&#x20;the&#x20;treated&#x20;and&#x20;control&#x20;workers,&#x20;we&#x20;find&#x20;causal&#x20;evidence&#x20;that&#x20;the&#x20;flexibility&#x20;of&#x20;smart-working&#x20;increases&#x20;the&#x20;productivity&#x20;of&#x20;workers&#x20;and&#x20;improves&#x20;their&#x20;well-being&#x20;and&#x20;work-life&#x20;balance.&#x20;We&#x20;also&#x20;observe&#x20;that&#x20;the&#x20;effects&#x20;are&#x20;stronger&#x20;for&#x20;women&#x20;and&#x20;that&#x20;there&#x20;are&#x20;no&#x20;significant&#x20;spillover&#x20;effects&#x20;within&#x20;workers&#x20;of&#x20;a&#x20;team.</div></div>
+<div class="row"><div class="col-xs-12 col-sm-4 metadataFieldLabel dc_subject_keyword">Subjects:&nbsp;</div><div class="col-xs-12 col-sm-8 metadataFieldValue dc_subject_keyword" lang="en">randomized&#x20;control&#x20;trial<br />productivity<br />work-life&#x20;balance<br />well-being</div></div>
+<div class="row"><div class="col-xs-12 col-sm-4 metadataFieldLabel dc_subject_jel">JEL:&nbsp;</div><div class="col-xs-12 col-sm-8 metadataFieldValue dc_subject_jel" lang="en">J16<br />J22<br />J24<br />L20<br />M54</div></div>
+<div class="row"><div class="col-xs-12 col-sm-4 metadataFieldLabel dc_type">Document Type:&nbsp;</div><div class="col-xs-12 col-sm-8 metadataFieldValue dc_type" lang="en">Working&#x20;Paper</div></div>
+<div class="row"><div class="col-xs-12 col-sm-4 metadataFieldLabel">Appears in Collections:</div><div class="col-xs-12 col-sm-8 metadataFieldValue"><a href="/escollectionhome/10419/19">CESifo Working Papers, CESifo GmbH</a><br/></div></div>
+</div><br/>
+<div class="panel panel-info"><div class="panel-heading">Files in This Item:</div>
+<div class="row"><div class="row"><div id="t1d" class="col-xs-6 col-sm-4 metadataFieldLabel">File</div>
+<div id="t2d" class="hidden-xs col-sm-3 metadataFieldLabel">Description</div>
+<div id="t3d" class="col-xs-6 col-sm-2 metadataFieldLabel">Size</div><div id="t4d" class="hidden-xs col-sm-3 metadataFieldLabel">Format</div></div>
+<div class="row"><div class="col-xs-6 col-sm-4 metadataFieldValue"><a target="_blank" href="https://www.econstor.eu/bitstream/10419/216561/1/cesifo1_wp8165.pdf">cesifo1_wp8165.pdf</a><br/><a class="download btn btn-primary"target="_blank" href="https://www.econstor.eu/bitstream/10419/216561/1/cesifo1_wp8165.pdf">download file <span class="fa-solid fa-file-pdf" aria-hidden="true" ></span></a></div><div class="hidden-xs col-sm-3 metadataFieldValue"></div><div class="col-xs-6 col-sm-2 metadataFieldValue">976.8 kB</div><div class="hidden-xs col-sm-3 metadataFieldValue">Adobe PDF</div></div></div>
+</div>
+<div class="container row">
+<div class="col-xs-12 col-sm-3 blcontainer"><a class="statisticsLink btn btn-primary" href="/esstatistics/10419/216561?year=2025&amp;month=6" >Download Statistics</a></div>
+<div class="col-xs-12 col-sm-3 blcontainer"><a class="bibtexLink btn btn-primary" href="/bibtexexport/10419/216561/Angelici2020Smart.bib" >BibTeX-Export</a></div>
+</div><br />
+<div class="container row">
+<div class="shariff" data-services="[&quot;twitter&quot;,&quot;facebook&quot;,&quot;whatsapp&quot;,&quot;telegram&quot;,&quot;reddit&quot;]" data-title="Smart-Working: Work Flexibility without Constraints" data-url="https://hdl.handle.net/10419/216561" data-theme="standard" data-button-style="icon"></div>
+</div><br /><br />
+
+<div class="container row">
+
+
+    
+
+</div>
+<br/>
+    
+
+<br/>
+    
+
+    <p class="submitFormHelp alert alert-info">Items in EconStor are protected by copyright, with all rights reserved, unless otherwise indicated.</p>
+
+    </div>
+    <script type="application/javascript">
+        document.addEventListener('DOMContentLoaded', function load() {
+            if (!window.jQuery) return setTimeout(load, 50);
+            jQuery(function ($) {
+                $(function () {
+                    $('[data-toggle="tooltip"]').tooltip();
+                    $('#citationhandlecopy').on("click", function( event ) {
+                        var handletext = $('#citationhandle').text();
+                        window.alert('copied to clipboard:" '+ handletext+'"');
+                        navigator.clipboard.writeText(handletext);
+                    });
+                });
+            });
+        }, false);
+    </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
+
+
+
+</div>
+</main>
+            
+             <footer >
+                 <div id="econstorfooter">
+                     <div class="container econstorfootercontainer">
+                        <div id="es_footer" class="row">
+                            <div class="col-12"><a href="/htmlmap" aria-hidden="true" style="display:none; visibility: hidden;"></a><ul class="bottomnavi">
+                                <li><a href="/contact">Contact</a></li>
+                                <li>| <a href="/Impressum">Imprint</a></li>
+                                <li>| <a href="/Datenschutz">Privacy</a></li>
+                                <li>| <a href="/staticpagessitemap">Sitemap</a></li>
+                                <li>| <a href="/erklaerung-zur-barrierefreiheit">Accessibility</a></li>
+                     <li>| <a onclick="javascript:document.repost.locale.value='de';
+                         document.repost.submit();" href="?locale=de">
+                     Deutsch
+                            </a></li>
+                     
+                            </ul></div>
+                        </div>
+                     </div>
+                 </div>
+
+    </footer>
+
+<!-- Copyright (c) 2000-2023 etracker GmbH. All rights reserved. -->
+<!-- This material may not be reproduced, displayed, modified or distributed -->
+<!-- without the express prior written permission of the copyright holder. -->
+<!-- etracker tracklet 5.0 -->
+<script type="text/javascript">
+// stop etracker from loading its own jQuery
+var _btNoJquery = true;
+var et_pagename = "Item%3A+Smart-Working%3A+Work+Flexibility+without+Constraints+-+hdl%3A10419%2F216561";
+var et_areas = "%2FEconStor%2Fifo+Institut+%E2%80%93+Leibniz-Institut+f%C3%BCr+Wirtschaftsforschung+an+der+Universit%C3%A4t+M%C3%BCnchen%2FCESifo+Working+Papers%2C+CESifo+GmbH";
+</script>
+
+<script id="_etLoader" type="text/javascript" charset="UTF-8" data-block-cookies="true" data-respect-dnt="true" data-secure-code="b9xphs" src="//code.etracker.com/code/e.js" defer="defer"></script>
+<!-- etracker tracklet 5.0 end -->
+
+
+
+
+
+
+
+    </body>
+</html>
+

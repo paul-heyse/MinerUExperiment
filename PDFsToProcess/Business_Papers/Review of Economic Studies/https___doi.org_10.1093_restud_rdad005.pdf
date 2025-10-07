@@ -1,0 +1,551 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>EconStor: Estimating Production Functions of Multiproduct Firms</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="Generator" content="DSpace 6.4" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <meta name="description" content="EconStor is a publication server for scholarly economic literature, provided as a non-commercial public service by the ZBW." lang="en" />
+
+
+		<meta name="title" content="Estimating Production Functions of Multiproduct Firms" />
+
+
+		<meta name="gwt:property" content="locale=en" />
+		<!-- STW suggest GWT Moduldeklaration //-->
+		<meta name='gwt:module' content='eu.zbw.EconStor.InfoPopup.Main=eu.zbw.EconStor.InfoPopup.Main' />
+		<meta name='gwt:module' content='eu.zbw.MoreStatsInfo.Main=eu.zbw.MoreStatsInfo.Main' />
+        <meta name='gwt:module' content='eu.zbw.RePEcCitEc.Main=eu.zbw.RePEcCitEc.Main' />
+
+		<!-- /STW GWT Moduldeklaration //-->
+		<!-- STW suggest Popup und tagcloud //-->
+        <link rel="preload" as="image" href="/image/logo-econstor-dark.png" type="image/png">
+        <link rel="stylesheet" type="text/css" media="all" href="/cssJawrPath/gzip_N263808996/bundles/cssbundle.css" />
+
+
+
+        
+        <link href="https://www.econstor.eu/bibtexexport/10419/201252/Valmari2016Estimating.bib" rel="describedby" type="application/x-bibtex" />
+        
+        <link href="https://hdl.handle.net/10419/201252" rel="cite-as" />
+        
+        <link href="https://www.econstor.eu/bitstream/10419/201252/1/ETLA-Working-Papers-37.pdf" rel="item" type="application/pdf" />
+        
+
+        
+		<!-- /STW suggest Popup //-->
+
+        
+        
+        <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon"/>
+
+        
+
+        <script type="text/javascript" src="/jsJawrPath/gzip_N1522907711/bundles/jQuerylib.js" defer="defer" ></script>
+
+        
+        
+        <script type="text/javascript" src="/jsJawrPath/gzip_N111575482/bundles/lib1.js" defer="defer" ></script>
+
+
+        <link rel="stylesheet" type="text/css" media="print" href="/cssJawrPath/gzip_2124493305/bundles/print.css" />
+
+        
+
+        <link rel="search" type="application/opensearchdescription+xml" href="/open-search/description.xml" title="DSpace"/>
+
+
+<link rel="schema.DCTERMS" href="http://purl.org/dc/terms/" />
+<link rel="schema.DC" href="http://purl.org/dc/elements/1.1/" />
+<meta name="DC.creator" content="Valmari, Nelli" xml:lang="en" />
+<meta name="DCTERMS.issued" content="2016" xml:lang="en" scheme="DCTERMS.W3CDTF" />
+<meta name="DC.identifier" content="http://hdl.handle.net/10419/201252" scheme="DCTERMS.URI" />
+<meta name="DCTERMS.abstract" content="Despite the fact that multiproduct firms constitute a considerable share of firms and account for an even greater share of production, virtually all production function estimates are based on the assumption that firms are single-product producers. The single-product assumption is made due to lack of data on input allocation across the various product lines multiproduct firms operate. I provide a method to estimate product-level production functions without observable input allocations. The empirical application and Monte Carlo simulations show that the single-product firm assumption leads to biased parameter and productivity estimates and overestimated productivity differences between firms." xml:lang="en" />
+<meta name="DC.language" content="eng" xml:lang="en" scheme="DCTERMS.RFC1766" />
+<meta name="DC.publisher" content="Helsinki: The Research Institute of the Finnish Economy (ETLA)" xml:lang="en" />
+<meta name="DC.relation" content="ETLA Working Papers No.37" xml:lang="en" />
+<meta name="DC.subject" content="D24" xml:lang="en" />
+<meta name="DC.subject" content="L11" xml:lang="en" />
+<meta name="DC.subject" content="L25" xml:lang="en" />
+<meta name="DC.subject" content="330" xml:lang="en" scheme="DCTERMS.DDC" />
+<meta name="DC.subject" content="Multiproduct firm" xml:lang="en" />
+<meta name="DC.subject" content="production function" xml:lang="en" />
+<meta name="DC.subject" content="productivity" xml:lang="en" />
+<meta name="DC.title" content="Estimating Production Functions of Multiproduct Firms" xml:lang="en" />
+<meta name="DC.type" content="Working Paper" xml:lang="en" />
+<meta name="DC.rights" content="http://www.econstor.eu/dspace/Nutzungsbedingungen" xml:lang="en" />
+
+<meta name="citation_keywords" content="Working Paper; Multiproduct firm; production function; productivity" />
+<meta name="citation_publication_date" content="2016" />
+<meta name="citation_title" content="Estimating Production Functions of Multiproduct Firms" />
+<meta name="citation_technical_report_number" content="37" />
+<meta name="citation_publisher" content="Helsinki: The Research Institute of the Finnish Economy (ETLA)" />
+<meta name="citation_language" content="eng" />
+<meta name="citation_author" content="Valmari, Nelli" />
+<meta name="citation_pdf_url" content="https://www.econstor.eu/bitstream/10419/201252/1/ETLA-Working-Papers-37.pdf" />
+<meta name="citation_abstract_html_url" content="https://www.econstor.eu/handle/10419/201252" />
+<meta name="citation_technical_report_institution" content="ETLA Working Papers" />
+
+
+
+
+
+
+
+    
+    
+
+        
+        
+        
+
+    </head>
+
+    
+    
+    <body >
+    <a class="sr-only" href="#content">Skip navigation</a>
+    
+    <div id="sideflag"><div id="sideflagaservice">A service of the</div><div id="sideflagzbw"><a href="http://www.zbw.eu" class="linksideflag" target="_blank">zbw</a></div></div>
+
+<header class="navbar">
+    <div class="econstorbrandingheader">
+        <div class="container econstorbranding">
+            <div class="row">
+                <div class="col-xs-12  col-sm-5" >
+                    
+                    <a href="/" class="navbar-econstorbrand" /><img src="/image/logo-econstor-dark.png" id="brandinglogo" width="235" height="62" loading="eager" alt="EconStor - Make Your Publications Visible. (Home)"></a>
+                </div>
+                <div class="hidden-xs  col-sm-7">
+                    <div class="hidden-xs econstortopnav" ><ul class="topnavi">
+                        <li><a href="/contact">Contact</a></li>
+                        <li>| <a href="/Impressum">Imprint</a></li>
+                        <li>| <a href="/Datenschutz">Privacy</a></li>
+                        <li>| <a href="/staticpagessitemap">Sitemap</a></li>
+                        <li>| <a href="/erklaerung-zur-barrierefreiheit">Accessibility</a></li>
+                        <li>| <a onclick="javascript:document.repost.locale.value='de';
+                                document.repost.submit();" href="/handle/10419/201252?locale=de">
+                            Deutsch
+                        </a></li>
+                        
+                    </ul></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+            <div class="container js-enabled">
+                
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       <div class="navbar-header navbar-inverse">
+         <button type="button" id="navbutton1" class="navbar-toggle" title="toggle navbar1 dropdown on mobile devices" data-toggle="collapse" data-target="#navbarcollapse1" aria-expanded="false" aria-controls="navbarcollapse1" onclick="$('#navbarcollapse2').collapse('hide')">
+           <span class="icon-bar"></span>
+           <span class="icon-bar"></span>
+           <span class="icon-bar"></span>
+         </button>
+         <button type="button" id="navbutton2" class="navbar-toggle" title="toggle navbar2 dropdown on mobile devices" data-toggle="collapse" data-target="#navbarcollapse2" aria-expanded="false" aria-controls="navbarcollapse2" onclick="$('#navbarcollapse1').collapse('hide')">
+             <span class="glyphicon glyphicon-option-vertical" style="top:-1px"></span>
+         </button>
+           
+       </div>
+       <nav class="collapse navbar-collapse bs-navbar-collapse navbar-inverse" role="navigation" id="navbarcollapse1" aria-labelledby="navbarcollapse1">
+         <ul class="nav navbar-nav">
+           <li class=""><a href="/">Home</a></li>
+
+           <li class="dropdown ">
+             <a href="#" class="dropdown-toggle" data-toggle="dropdown">About EconStor <b class="caret"></b></a>
+             <ul class="dropdown-menu">
+               <li><a href="/about">About EconStor</a></li>
+               <li><a href="/advisoryboard">Advisory Board</a></li>
+               <li><a href="/policy">Policy</a></li>
+               <li><a href="http://blog.econstor.eu/" >News</a></li>
+               <li><a href="/Nutzungsbedingungen">Terms of use</a></li>
+               <li><a href="/dsinfos/usagestatistics">Usage statistics</a></li>
+                 
+             </ul>
+           </li>
+           
+             
+
+                 <li class="dropdown ">
+                     
+                     <a href="#" class="dropdown-toggle" data-toggle="dropdown">Submit <b class="caret"></b></a>
+                     
+                     <ul class="dropdown-menu">
+                     
+                         <li class="dropdown-header">for:</li>
+                         <li><a href="/pubinfo/institutions">institutions</a></li>
+                         <li><a href="/pubinfo/authors">authors</a></li>
+                         
+                         
+                     </ul>
+                 </li>
+             
+           <li class=""><a href="/econbiz-search">Search</a></li>
+
+           <li class="dropdown ">
+             <a href="#" class="dropdown-toggle" data-toggle="dropdown">Browse by <b class="caret"></b></a>
+             <ul class="dropdown-menu">
+
+				
+				
+				
+                 <li><a href="/browse?type=author">Author</a></li>
+                 <li><a href="/browse?type=dateissuedes">Year of Publication</a></li>
+                 <li><a href="/browse?type=doctype">Document Type</a></li>
+				
+                 <li><a href="/community-list">Communities&nbsp;&amp;&nbsp;Collections</a></li>
+                 <li><a href="/journal-list">Journals</a></li>
+                 <li><a href="/monograph-list">Monographs (by Publishers)</a></li>
+
+            </ul>
+          </li>
+       </ul>
+       <ul class="nav navbar-nav">
+         <li class=""><a href="/participants">References</a></li>
+         <li class=""><a href="/faq">FAQ</a></li>
+         <li class=""><a href="/openaccess">Open Access</a></li>
+          
+       </ul>
+
+
+    </nav>
+<!-- only visible on devices with a xs screensize according to Bootstrap -->
+    <nav class="collapse navbar-collapse bs-navbar-collapse navbar-inverse" role="navigation" id="navbarcollapse2" aria-labelledby="navbarcollapse2">
+        <ul class="nav navbar-nav">
+            <li class=" visible-xs-block"><a href="/contact">Contact</a></li>
+            <li class=" visible-xs-block"><a href="/Impressum">Imprint</a></li>
+            <li class=" visible-xs-block"><a href="/Datenschutz">Privacy</a></li>
+            <li class=" visible-xs-block"><a href="/staticpagessitemap">Sitemap</a></li>
+            <li class="visible-xs-block"><a onclick="javascript:document.repost.locale.value='de';
+                document.repost.submit();" href="/handle/10419/201252?locale=de">
+            <img src="/stats/img/flags/de.png" alt="image of flag of de" />
+            Deutsch
+        </a></li>
+            
+        </ul>
+    </nav>
+<!-- /only visible on devices with a xs screensize according to Bootstrap -->
+
+            </div>
+            <noscript>
+                <div class="container js-disabled">
+                    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        <link type="text/css" rel="stylesheet" href="/nav-nojs.css" />
+
+       <nav class="collapse navbar-collapse bs-navbar-collapse navbar-inverse" role="navigation">
+         <ul class="nav navbar-nav">
+           <li class=""><a href="/">Home</a></li>
+           <li><a href="/about">About EconStor</a></li>
+           <li><a href="/advisoryboard">Advisory Board</a></li>
+           <li><a href="/policy">Policy</a></li>
+             
+             
+                 <li><a href="/pubinfo/institutions">submit for&nbsp;institutions</a></li>
+                 <li><a href="/pubinfo/authors">submit for&nbsp;authors</a></li>
+             
+             
+           <li class=""><a href="/simple-search">Search</a></li>
+			
+                 <li><a href="/browse?type=author">browse by&nbsp;Author</a></li>
+                 <li><a href="/browse?type=dateissuedes">browse by&nbsp;Year of Publication</a></li>
+                 <li><a href="/browse?type=doctype">browse by&nbsp;Document Type</a></li>
+            
+                 <li><a href="/community-list">browse by&nbsp;Communities&nbsp;&amp;&nbsp;Collections</a></li>
+                 <li><a href="/journal-list">browse by&nbsp;Journals</a></li>
+                 <li><a href="/monograph-list">browse by&nbsp;Monographs (by Publishers)</a></li>
+
+       </ul>
+       <ul class="nav navbar-nav">
+         <li><a href="http://blog.econstor.eu/" >News</a></li>
+         <li><a href="/Nutzungsbedingungen">Terms of use</a></li>
+         <li><a href="/dsinfos/usagestatistics">Usage statistics</a></li>
+         <li class=""><a href="/participants">References</a></li>
+         <li class=""><a href="/faq">FAQ</a></li>
+         <li class=""><a href="/openaccess">Open Access</a></li>
+       </ul>
+    </nav>
+
+                </div>
+            </noscript>
+
+</header>
+<main id="content" role="main">
+
+
+                
+
+<div class="container">
+                
+
+
+
+  
+
+<ol class="breadcrumb">
+
+  <li><a href="/">EconStor</a></li>
+
+  <li><a href="/handle/10419/44480">The Research Institute of the Finnish Economy (ETLA), Helsinki</a></li>
+
+  <li><a href="/handle/10419/201214">ETLA Working Papers, The Research Institute of the Finnish Economy (ETLA)</a></li>
+
+</ol>
+
+</div>                
+
+
+
+        
+<div class="container">
+		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class="col-xs-12" style="overflow-wrap: break-word;">
+
+
+    <script type="text/javascript" src="/eu.zbw.RePEcCitEc.Main/eu.zbw.RePEcCitEc.Main.nocache.js" async="async"></script>
+    <script type="text/javascript">
+        <!--//
+        var RePEcCitEcConfig = {
+            ZitiertVonLabel : "Is cited by:",
+            ZitierteQuellenLabel : "Cites the following sources:",
+            AnzahlDerZitationenLabel : "%ANZAHL% documents.",
+            AnzahlDerZitationLabel : "one document.",
+            AnzahlDerQuellenLabel : "%ANZAHL% sources.",
+            AnzahlDerQuelleLabel : "one source.",
+            RePEcHandle : "RePEc:rif:wpaper:37"
+        };
+        //-->
+    </script>
+
+		
+		
+		
+		
+
+                
+                <div class="well">Please use this identifier to cite or link to this item:
+
+                <code id="citationhandle">https://hdl.handle.net/10419/201252</code>&nbsp;<button type="button" class="btn btn-default btn-sm" id="citationhandlecopy" data-toggle="tooltip" data-placement="right" title="copy to clipboard" >
+                        <span class="glyphicon glyphicon-copy" aria-hidden="true"></span><span class="sr-only">copy to clipboard</span></button></div>
+
+
+
+    
+    <div class="metadatacontainer" id="itemmetadatacontainer" >
+<div class="row"><div class="col-xs-12 col-sm-4 metadataFieldLabel dc_title">Title:&nbsp;</div><div class="col-xs-12 col-sm-8 metadataFieldValue dc_title" lang="en"><h1 id="itemtitle"><a href="https://www.econstor.eu&#x2F;bitstream&#x2F;10419&#x2F;201252&#x2F;1&#x2F;ETLA-Working-Papers-37.pdf" target="_blank" >Estimating&#x20;Production&#x20;Functions&#x20;of&#x20;Multiproduct&#x20;Firms <span class="fa-regular fa-file-pdf" aria-hidden="true" style="color:red;"></span></a></h1></div></div>
+<div class="row"><div class="col-xs-12 col-sm-4 metadataFieldLabel dc_contributor_author">Authors:&nbsp;</div><div class="col-xs-12 col-sm-8 metadataFieldValue dc_contributor_author" lang="en"><a class="author"href="/browse?type=author&amp;value=Valmari%2C+Nelli">Valmari,&#x20;Nelli</a></div></div>
+<div class="row"><div class="col-xs-12 col-sm-4 metadataFieldLabel dc_date_issued">Year of Publication:&nbsp;</div><div class="col-xs-12 col-sm-8 metadataFieldValue dc_date_issued" lang="en">2016</div></div>
+<div class="row"><div class="col-xs-12 col-sm-4 metadataFieldLabel dc_relation_ispartofseries">Series/Report no.:&nbsp;</div><div class="col-xs-12 col-sm-8 metadataFieldValue dc_relation_ispartofseries" lang="en">ETLA&#x20;Working&#x20;Papers&#x20;No.&#x20;37</div></div>
+<div class="row"><div class="col-xs-12 col-sm-4 metadataFieldLabel dc_publisher">Publisher:&nbsp;</div><div class="col-xs-12 col-sm-8 metadataFieldValue dc_publisher" lang="en">The&#x20;Research&#x20;Institute&#x20;of&#x20;the&#x20;Finnish&#x20;Economy&#x20;(ETLA),&#x20;Helsinki</div></div>
+<div class="row"><div class="col-xs-12 col-sm-4 metadataFieldLabel dc_description_abstract">Abstract:&nbsp;</div><div class="col-xs-12 col-sm-8 metadataFieldValue dc_description_abstract" lang="en">Despite&#x20;the&#x20;fact&#x20;that&#x20;multiproduct&#x20;firms&#x20;constitute&#x20;a&#x20;considerable&#x20;share&#x20;of&#x20;firms&#x20;and&#x20;account&#x20;for&#x20;an&#x20;even&#x20;greater&#x20;share&#x20;of&#x20;production,&#x20;virtually&#x20;all&#x20;production&#x20;function&#x20;estimates&#x20;are&#x20;based&#x20;on&#x20;the&#x20;assumption&#x20;that&#x20;firms&#x20;are&#x20;single-product&#x20;producers.&#x20;The&#x20;single-product&#x20;assumption&#x20;is&#x20;made&#x20;due&#x20;to&#x20;lack&#x20;of&#x20;data&#x20;on&#x20;input&#x20;allocation&#x20;across&#x20;the&#x20;various&#x20;product&#x20;lines&#x20;multiproduct&#x20;firms&#x20;operate.&#x20;I&#x20;provide&#x20;a&#x20;method&#x20;to&#x20;estimate&#x20;product-level&#x20;production&#x20;functions&#x20;without&#x20;observable&#x20;input&#x20;allocations.&#x20;The&#x20;empirical&#x20;application&#x20;and&#x20;Monte&#x20;Carlo&#x20;simulations&#x20;show&#x20;that&#x20;the&#x20;single-product&#x20;firm&#x20;assumption&#x20;leads&#x20;to&#x20;biased&#x20;parameter&#x20;and&#x20;productivity&#x20;estimates&#x20;and&#x20;overestimated&#x20;productivity&#x20;differences&#x20;between&#x20;firms.</div></div>
+<div class="row"><div class="col-xs-12 col-sm-4 metadataFieldLabel dc_subject_keyword">Subjects:&nbsp;</div><div class="col-xs-12 col-sm-8 metadataFieldValue dc_subject_keyword" lang="en">Multiproduct&#x20;firm<br />production&#x20;function<br />productivity</div></div>
+<div class="row"><div class="col-xs-12 col-sm-4 metadataFieldLabel dc_subject_jel">JEL:&nbsp;</div><div class="col-xs-12 col-sm-8 metadataFieldValue dc_subject_jel" lang="en">D24<br />L11<br />L25</div></div>
+<div class="row"><div class="col-xs-12 col-sm-4 metadataFieldLabel dc_type">Document Type:&nbsp;</div><div class="col-xs-12 col-sm-8 metadataFieldValue dc_type" lang="en">Working&#x20;Paper</div></div>
+<div class="row"><div class="col-xs-12 col-sm-4 metadataFieldLabel">Appears in Collections:</div><div class="col-xs-12 col-sm-8 metadataFieldValue"><a href="/escollectionhome/10419/201214">ETLA Working Papers, The Research Institute of the Finnish Economy (ETLA)</a><br/></div></div>
+</div><br/>
+<div class="panel panel-info"><div class="panel-heading">Files in This Item:</div>
+<div class="row"><div class="row"><div id="t1d" class="col-xs-6 col-sm-4 metadataFieldLabel">File</div>
+<div id="t2d" class="hidden-xs col-sm-3 metadataFieldLabel">Description</div>
+<div id="t3d" class="col-xs-6 col-sm-2 metadataFieldLabel">Size</div><div id="t4d" class="hidden-xs col-sm-3 metadataFieldLabel">Format</div></div>
+<div class="row"><div class="col-xs-6 col-sm-4 metadataFieldValue"><a target="_blank" href="https://www.econstor.eu/bitstream/10419/201252/1/ETLA-Working-Papers-37.pdf">ETLA-Working-Papers-37.pdf</a><br/><a class="download btn btn-primary"target="_blank" href="https://www.econstor.eu/bitstream/10419/201252/1/ETLA-Working-Papers-37.pdf">download file <span class="fa-solid fa-file-pdf" aria-hidden="true" ></span></a></div><div class="hidden-xs col-sm-3 metadataFieldValue"></div><div class="col-xs-6 col-sm-2 metadataFieldValue">691.15 kB</div><div class="hidden-xs col-sm-3 metadataFieldValue">Adobe PDF</div></div></div>
+</div>
+<div class="container row">
+<div class="col-xs-12 col-sm-3 blcontainer"><a class="statisticsLink btn btn-primary" href="/esstatistics/10419/201252?year=2025&amp;month=6" >Download Statistics</a></div>
+<div class="col-xs-12 col-sm-3 blcontainer"><a class="bibtexLink btn btn-primary" href="/bibtexexport/10419/201252/Valmari2016Estimating.bib" >BibTeX-Export</a></div>
+</div><br />
+<div class="container row">
+<div class="shariff" data-services="[&quot;twitter&quot;,&quot;facebook&quot;,&quot;whatsapp&quot;,&quot;telegram&quot;,&quot;reddit&quot;]" data-title="Estimating Production Functions of Multiproduct Firms" data-url="https://hdl.handle.net/10419/201252" data-theme="standard" data-button-style="icon"></div>
+</div><br /><br />
+
+<div class="container row">
+
+
+    
+
+</div>
+<br/>
+    
+
+<br/>
+    
+
+    <p class="submitFormHelp alert alert-info">Items in EconStor are protected by copyright, with all rights reserved, unless otherwise indicated.</p>
+
+    </div>
+    <script type="application/javascript">
+        document.addEventListener('DOMContentLoaded', function load() {
+            if (!window.jQuery) return setTimeout(load, 50);
+            jQuery(function ($) {
+                $(function () {
+                    $('[data-toggle="tooltip"]').tooltip();
+                    $('#citationhandlecopy').on("click", function( event ) {
+                        var handletext = $('#citationhandle').text();
+                        window.alert('copied to clipboard:" '+ handletext+'"');
+                        navigator.clipboard.writeText(handletext);
+                    });
+                });
+            });
+        }, false);
+    </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
+
+
+
+</div>
+</main>
+            
+             <footer >
+                 <div id="econstorfooter">
+                     <div class="container econstorfootercontainer">
+                        <div id="es_footer" class="row">
+                            <div class="col-12"><a href="/htmlmap" aria-hidden="true" style="display:none; visibility: hidden;"></a><ul class="bottomnavi">
+                                <li><a href="/contact">Contact</a></li>
+                                <li>| <a href="/Impressum">Imprint</a></li>
+                                <li>| <a href="/Datenschutz">Privacy</a></li>
+                                <li>| <a href="/staticpagessitemap">Sitemap</a></li>
+                                <li>| <a href="/erklaerung-zur-barrierefreiheit">Accessibility</a></li>
+                     <li>| <a onclick="javascript:document.repost.locale.value='de';
+                         document.repost.submit();" href="?locale=de">
+                     Deutsch
+                            </a></li>
+                     
+                            </ul></div>
+                        </div>
+                     </div>
+                 </div>
+
+    </footer>
+
+<!-- Copyright (c) 2000-2023 etracker GmbH. All rights reserved. -->
+<!-- This material may not be reproduced, displayed, modified or distributed -->
+<!-- without the express prior written permission of the copyright holder. -->
+<!-- etracker tracklet 5.0 -->
+<script type="text/javascript">
+// stop etracker from loading its own jQuery
+var _btNoJquery = true;
+var et_pagename = "Item%3A+Estimating+Production+Functions+of+Multiproduct+Firms+-+hdl%3A10419%2F201252";
+var et_areas = "%2FEconStor%2FThe+Research+Institute+of+the+Finnish+Economy+%28ETLA%29%2C+Helsinki%2FETLA+Working+Papers%2C+The+Research+Institute+of+the+Finnish+Economy+%28ETLA%29";
+</script>
+
+<script id="_etLoader" type="text/javascript" charset="UTF-8" data-block-cookies="true" data-respect-dnt="true" data-secure-code="b9xphs" src="//code.etracker.com/code/e.js" defer="defer"></script>
+<!-- etracker tracklet 5.0 end -->
+
+
+
+
+
+
+
+    </body>
+</html>
+
