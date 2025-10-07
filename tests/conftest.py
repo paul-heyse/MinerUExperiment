@@ -16,6 +16,9 @@ import MinerUExperiment.batch_processor as batch_processor
 from MinerUExperiment.batch_processor import BatchProcessor, BatchSummary
 
 
+ORIGINAL_PREFLIGHT = BatchProcessor._run_preflight_checks
+
+
 STUB_SCRIPT = """#!/usr/bin/env python3
 import argparse
 import json
@@ -159,9 +162,21 @@ def stub_batch_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(batch_processor, "load_config", lambda: DummyMineruConfig(), raising=False)
     monkeypatch.setattr(batch_processor, "write_config", lambda config: None, raising=False)
     monkeypatch.setattr(
+        batch_processor,
+        "_ORIGINAL_PREFLIGHT",
+        ORIGINAL_PREFLIGHT,
+        raising=False,
+    )
+    monkeypatch.setattr(
         BatchProcessor,
         "_resolve_dtype_preference",
         lambda self: "float16",
+        raising=False,
+    )
+    monkeypatch.setattr(
+        BatchProcessor,
+        "_run_preflight_checks",
+        lambda self: {"preflight": "skipped"},
         raising=False,
     )
     monkeypatch.setattr(BatchProcessor, "_validate_resources", lambda self: None, raising=False)

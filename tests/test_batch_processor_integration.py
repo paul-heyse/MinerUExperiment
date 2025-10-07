@@ -1,16 +1,25 @@
+import importlib
 import json
 import os
 import sys
 import threading
 import time
 from pathlib import Path
+from types import ModuleType
+
+import pytest
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SRC_ROOT = PROJECT_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-from MinerUExperiment.batch_processor import BatchProcessor, BatchProcessorConfig
+import MinerUExperiment.batch_processor as batch_processor
+from MinerUExperiment.batch_processor import (
+    BatchProcessor,
+    BatchProcessorConfig,
+    BatchProcessorError,
+)
 from MinerUExperiment.worker_coordinator import (
     done_path_for,
     failed_path_for,
@@ -197,5 +206,130 @@ def test_batch_processor_graceful_shutdown(tmp_path: Path, fake_mineru: Path) ->
     pending_pdfs = [pdf for pdf in pdfs if not done_path_for(pdf).exists()]
     for pdf in pending_pdfs:
         assert _attempts_for(pdf) == 0
+
+
+def _restore_preflight(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        BatchProcessor,
+        "_run_preflight_checks",
+        batch_processor._ORIGINAL_PREFLIGHT,
+        raising=False,
+    )
+
+
+def _stub_dependency_imports(
+    monkeypatch: pytest.MonkeyPatch, *, missing: set[str] | None = None
+) -> None:
+    missing = missing or set()
+    for name in {"torch", "vllm"}:
+        if name in missing:
+            monkeypatch.delitem(sys.modules, name, raising=False)
+
+    original_import = importlib.import_module
+    original_find_spec = importlib.util.find_spec
+    module_cache: dict[str, ModuleType] = {}
+
+    def _fake_import(name: str, package: str | None = None):
+        if name in {"torch", "vllm"}:
+            if name in missing:
+                raise ModuleNotFoundError(name)
+            if name not in module_cache:
+                module = ModuleType(name)
+                if name == "torch":
+                    module.cuda = type(  # type: ignore[attr-defined]
+                        "_Cuda", (), {"is_available": staticmethod(lambda: False), "device_count": staticmethod(lambda: 0)}
+                    )()
+                module_cache[name] = module
+                monkeypatch.setitem(sys.modules, name, module)
+            return module_cache[name]
+        return original_import(name, package)  # type: ignore[call-arg]
+
+    def _fake_find_spec(name: str, package: str | None = None):
+        if name in missing:
+            return None
+        return original_find_spec(name, package)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(importlib, "import_module", _fake_import)
+    monkeypatch.setattr(importlib.util, "find_spec", _fake_find_spec)
+
+
+def test_batch_processor_missing_cli_aborts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_dir = tmp_path / "PDFsToProcess"
+    output_dir = tmp_path / "MDFilesCreated"
+    input_dir.mkdir()
+    _create_pdf(input_dir / "doc.pdf")
+
+    _restore_preflight(monkeypatch)
+    _stub_dependency_imports(monkeypatch)
+
+    config = BatchProcessorConfig(
+        input_dir=input_dir,
+        output_dir=output_dir,
+        workers=1,
+        poll_interval=0.1,
+        max_retries=0,
+        retry_delay=0.05,
+        progress_interval=0.2,
+        mineru_cli="/not/a/real/mineru",
+        mineru_backend="test-backend",
+        mineru_extra_args=tuple(),
+        env_overrides={},
+        log_progress=False,
+        memory_pause_threshold=0.95,
+        memory_resume_threshold=0.5,
+        cpu_pause_threshold=0.99,
+        resource_monitor_interval=0.2,
+        worker_memory_limit_gb=0.1,
+        dtype="float16",
+    )
+
+    processor = BatchProcessor(config)
+
+    with pytest.raises(BatchProcessorError, match="MinerU CLI executable not found"):
+        processor.run()
+
+    assert processor._workers == []
+
+
+def test_batch_processor_missing_dependency_aborts(
+    tmp_path: Path, fake_mineru: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_dir = tmp_path / "PDFsToProcess"
+    output_dir = tmp_path / "MDFilesCreated"
+    input_dir.mkdir()
+    _create_pdf(input_dir / "doc.pdf")
+
+    _restore_preflight(monkeypatch)
+    _stub_dependency_imports(monkeypatch, missing={"torch"})
+
+    config = BatchProcessorConfig(
+        input_dir=input_dir,
+        output_dir=output_dir,
+        workers=1,
+        poll_interval=0.1,
+        max_retries=0,
+        retry_delay=0.05,
+        progress_interval=0.2,
+        mineru_cli=str(fake_mineru),
+        mineru_backend="test-backend",
+        mineru_extra_args=tuple(),
+        env_overrides={},
+        log_progress=False,
+        memory_pause_threshold=0.95,
+        memory_resume_threshold=0.5,
+        cpu_pause_threshold=0.99,
+        resource_monitor_interval=0.2,
+        worker_memory_limit_gb=0.1,
+        dtype="float16",
+    )
+
+    processor = BatchProcessor(config)
+
+    with pytest.raises(BatchProcessorError, match="Missing required Python modules"):
+        processor.run()
+
+    assert processor._workers == []
 
     assert not any(input_dir.rglob("*.lock"))

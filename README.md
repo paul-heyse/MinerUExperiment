@@ -45,6 +45,14 @@ PY
 
 The `process_pdf` helper wraps the `mineru` CLI and enforces the `vlm-vllm-engine` backend.
 
+### Batch Processor Preflight Checks
+
+Before worker processes launch, the batch processor now performs preflight validation. It verifies that the
+configured `mineru` CLI is executable, required Python modules (`torch`, `vllm`) import successfully, and the
+output directory is writable. The setup progress bar reports each validation outcome so operators can quickly
+diagnose failures. Resolve any reported issues before re-running the batch job to avoid exhausting worker
+retries on misconfigurations.
+
 ## Performance Profiles
 
 The batch processor exposes tuned profiles that map to the RTX 5090 + AMD 9950x hardware:
